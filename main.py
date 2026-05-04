@@ -18,8 +18,10 @@ if BASE_DIR not in sys.path:
 
 from api.server import create_app
 
-PORT = 7860
-URL  = f"http://127.0.0.1:{PORT}"
+# Render.com은 PORT 환경변수를 주입함. 로컬은 기본 7860.
+PORT      = int(os.environ.get("PORT", 7860))
+IS_CLOUD  = "PORT" in os.environ                 # Render에서 실행 중 여부
+URL       = f"http://127.0.0.1:{PORT}"
 
 
 def open_browser():
@@ -35,8 +37,11 @@ def main():
     print(f"  서버 주소: {URL}")
     print("  종료: Ctrl+C")
     print("=" * 52)
-    threading.Thread(target=open_browser, daemon=True).start()
-    app.run(host="127.0.0.1", port=PORT, debug=False,
+    # 클라우드(Render)에서는 브라우저를 열지 않음
+    if not IS_CLOUD:
+        threading.Thread(target=open_browser, daemon=True).start()
+    host = "0.0.0.0" if IS_CLOUD else "127.0.0.1"
+    app.run(host=host, port=PORT, debug=False,
             use_reloader=False, threaded=True)
 
 
