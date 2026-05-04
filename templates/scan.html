@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CFIE — 신규 진입 종목 찾기</title>
+<link rel="stylesheet" href="/static/css/common.css">
+<link rel="stylesheet" href="/static/css/scan.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <a href="/" class="logo" style="text-decoration:none">CFIE</a>
+    <span class="ver">v3.7</span>
+  </div>
+  <nav class="topbar-nav">
+    <a href="/"      class="nav-link" data-page="/">대시보드</a>
+    <a href="/scan"  class="nav-link" data-page="/scan">신규 진입 종목 찾기</a>
+    <a href="/mypage"class="nav-link" data-page="/mypage">마이 페이지</a>
+  </nav>
+  <div class="topbar-search">
+    <form class="search-form" onsubmit="return false;">
+      <input type="text" id="searchInput" class="search-input"
+             placeholder="종목명 또는 티커 검색…" autocomplete="off">
+      <button type="button" class="search-btn" onclick="doSearch()">⌕</button>
+    </form>
+    <div id="searchDropdown" class="search-dropdown hidden"></div>
+  </div>
+  <div class="topbar-right">
+    <span id="clockText" class="clock"></span>
+  </div>
+</header>
+
+<!-- 로딩 오버레이 -->
+<div id="loadingOverlay" class="loading-overlay" style="display:none">
+  <div class="spinner"></div>
+  <p id="loadingMsg" style="margin-top:16px;color:var(--text2)">스캔 중…</p>
+</div>
+
+<main class="main-content">
+
+  <div class="scan-hero">
+    <h1>신규 진입 종목 찾기</h1>
+    <p>FIS 점수 기반으로 진입 조건을 충족하는 종목을 자동 발굴합니다</p>
+  </div>
+
+  <!-- 마켓 탭 -->
+  <div class="market-tabs">
+    <button class="mtab active" data-market="kospi"  onclick="selectMarket('kospi')">🇰🇷 코스피</button>
+    <button class="mtab"        data-market="kosdaq" onclick="selectMarket('kosdaq')">📊 코스닥</button>
+    <button class="mtab"        data-market="us"     onclick="selectMarket('us')">🇺🇸 미국</button>
+  </div>
+
+  <button id="scanBtn" class="scan-btn" onclick="doScan()">스캔 시작</button>
+
+  <!-- 결과 섹션 -->
+  <div id="resultsSection" style="display:none">
+    <div class="result-header">
+      <span class="result-count" id="resultCount">0개</span>
+      <span class="result-note"  id="resultLabel"></span>
+    </div>
+    <div class="candidates-grid" id="candidatesGrid"></div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  본 서비스는 참고용 정보이며 투자 권유가 아닙니다. 투자 결과에 대한 책임은 투자자 본인에게 있습니다.
+</footer>
+
+<!-- 신규 진입 매수 모달 -->
+<div id="scanBuyModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">신규 진입 매수</div>
+      <div class="modal-sub" id="scanModalSub"></div>
+    </div>
+    <div class="form-row">
+      <label>수량 (주)</label>
+      <input type="number" id="scanModalQty"   class="modal-input" min="1" value="1">
+    </div>
+    <div class="form-row">
+      <label>매수가</label>
+      <input type="number" id="scanModalPrice" class="modal-input" min="0" step="0.01">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel"  onclick="closeScanBuyModal()">취소</button>
+      <button class="btn-confirm" onclick="confirmScanBuy()">매수 등록</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="/static/js/common.js"></script>
+<script src="/static/js/scan.js"></script>
+</body>
+</html>

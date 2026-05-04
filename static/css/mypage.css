@@ -1,0 +1,98 @@
+﻿/* static/css/mypage.css */
+
+.mypage-hero {
+  padding: 28px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+.mypage-hero h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+.mypage-hero p  { font-size: 14px; color: var(--text2); }
+
+/* 요약 카드 */
+.mp-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.mp-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.mp-card-label { font-size: 11px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mp-card-value { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+.mp-card-value.bull { color: var(--bull); }
+.mp-card-value.bear { color: var(--bear); }
+.mp-card-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+/* 포지션 테이블 */
+.mp-table-wrap {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.mp-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.mp-table-title { font-size: 14px; font-weight: 700; }
+.mp-refresh-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px; font-weight: 600;
+  color: var(--text2);
+  transition: all 0.15s;
+}
+.mp-refresh-btn:hover { color: var(--text1); border-color: var(--text3); }
+
+.mp-table { width: 100%; border-collapse: collapse; }
+.mp-table th {
+  padding: 10px 16px;
+  background: var(--bg);
+  color: var(--text3);
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  text-align: right; white-space: nowrap;
+}
+.mp-table th:first-child { text-align: left; }
+.mp-table td {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px; text-align: right;
+  white-space: nowrap;
+}
+.mp-table td:first-child { text-align: left; }
+.mp-table tr:hover td { background: rgba(255,255,255,0.025); }
+.mp-name   { font-size: 14px; font-weight: 700; }
+.mp-ticker { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.mp-bull   { color: var(--bull); font-weight: 700; }
+.mp-bear   { color: var(--bear); font-weight: 700; }
+.mp-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.mp-btn {
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 600;
+  transition: all 0.15s;
+}
+.mp-btn-analyze { background: rgba(124,111,247,0.1); color: var(--accent); border: 1px solid rgba(124,111,247,0.25); }
+.mp-btn-analyze:hover { background: rgba(124,111,247,0.2); }
+.mp-btn-buy { background: rgba(229,57,53,0.08); color: var(--bull); border: 1px solid rgba(229,57,53,0.2); }
+.mp-btn-buy:hover { background: rgba(229,57,53,0.18); }
+.mp-btn-sell { background: rgba(21,101,192,0.08); color: #64B5F6; border: 1px solid rgba(21,101,192,0.2); }
+.mp-btn-sell:hover { background: rgba(21,101,192,0.18); }
+
+/* 빈 상태 */
+.mp-empty {
+  padding: 60px 24px; text-align: center;
+}
+.mp-empty-icon  { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+.mp-empty-title { font-size: 15px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
+.mp-empty-sub   { font-size: 13px; color: var(--text3); margin-bottom: 20px; }

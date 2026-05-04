@@ -1,0 +1,111 @@
+﻿/* static/css/scan.css */
+
+.scan-hero {
+  padding: 32px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+.scan-hero h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+.scan-hero p  { font-size: 14px; color: var(--text2); }
+
+/* 탭 */
+.market-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+.mtab {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px; font-weight: 700;
+  color: var(--text2);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.mtab:hover { color: var(--text1); border-color: var(--text3); }
+.mtab.active { color: var(--accent); background: rgba(124,111,247,0.12); border-color: rgba(124,111,247,0.35); }
+
+/* 스캔 버튼 */
+.scan-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 24px;
+  background: var(--accent);
+  color: white;
+  border-radius: 9px;
+  font-size: 14px; font-weight: 700;
+  transition: opacity 0.15s;
+  margin-bottom: 24px;
+}
+.scan-btn:hover { opacity: 0.85; }
+.scan-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.scan-btn .spin { width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; }
+
+/* 결과 헤더 */
+.result-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.result-count {
+  background: var(--accent);
+  color: white;
+  font-size: 12px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px;
+}
+.result-note { font-size: 12px; color: var(--text3); }
+
+/* 후보 그리드 */
+.candidates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.candidate-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.candidate-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+.cc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.cc-name { font-size: 15px; font-weight: 800; }
+.cc-ticker { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.cc-fis-badge {
+  font-size: 11px; font-weight: 800;
+  padding: 4px 10px; border-radius: 20px;
+  color: white; white-space: nowrap;
+}
+.cc-label { font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+.cc-summary { font-size: 12px; color: var(--text2); line-height: 1.55; margin-bottom: 14px; border-left: 2px solid var(--border); padding-left: 10px; }
+.cc-scores { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.cs-chip {
+  font-size: 11px;
+  padding: 3px 9px; border-radius: 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+.cs-chip.pos { color: var(--bull); border-color: rgba(229,57,53,0.3); background: rgba(229,57,53,0.08); }
+.cs-chip.neg { color: var(--bear); border-color: rgba(21,101,192,0.3); background: rgba(21,101,192,0.08); }
+.cc-actions { display: flex; gap: 8px; }
+.cc-btn {
+  flex: 1; height: 36px; border-radius: 8px;
+  font-size: 12px; font-weight: 700;
+  transition: all 0.15s;
+}
+.cc-btn-analyze {
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text2);
+}
+.cc-btn-analyze:hover { color: var(--accent); border-color: var(--accent); }
+.cc-btn-buy {
+  background: rgba(229,57,53,0.12);
+  border: 1px solid rgba(229,57,53,0.3);
+  color: var(--bull);
+}
+.cc-btn-buy:hover { background: rgba(229,57,53,0.22); }
+
+/* 빈 결과 */
+.no-result {
+  text-align: center; padding: 60px 24px;
+  color: var(--text3); font-size: 14px;
+}
+.no-result .nr-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
