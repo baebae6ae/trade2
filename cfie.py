@@ -77,6 +77,41 @@ def calc_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["High52"] = h.rolling(252).max()
     df["Low52"]  = lo.rolling(252).min()
 
+    # RSI(14)
+    delta    = c.diff()
+    gain     = delta.clip(lower=0)
+    loss     = -delta.clip(upper=0)
+    avg_gain = gain.ewm(span=14, adjust=False).mean()
+    avg_loss = loss.ewm(span=14, adjust=False).mean()
+    rs       = avg_gain / avg_loss.replace(0, np.nan)
+    df["RSI"] = 100 - 100 / (1 + rs)
+
+    # ADX(14)
+    up_move    = h.diff()
+    down_move  = -lo.diff()
+    plus_dm    = ((up_move > down_move) & (up_move > 0)).astype(float) * up_move
+    minus_dm   = ((down_move > up_move) & (down_move > 0)).astype(float) * down_move
+    plus_di14  = 100 * plus_dm.ewm(span=14, adjust=False).mean() / df["ATR14"].replace(0, np.nan)
+    minus_di14 = 100 * minus_dm.ewm(span=14, adjust=False).mean() / df["ATR14"].replace(0, np.nan)
+    dx         = 100 * (plus_di14 - minus_di14).abs() / (plus_di14 + minus_di14).replace(0, np.nan)
+    df["ADX"]     = dx.ewm(span=14, adjust=False).mean()
+    df["PlusDI"]  = plus_di14
+    df["MinusDI"] = minus_di14
+
+    # OBV
+    obv_dir   = np.sign(c.diff().fillna(0))
+    df["OBV"] = (obv_dir * v).cumsum()
+
+    # Stochastic %K/%D (14, 3)
+    low14         = lo.rolling(14).min()
+    high14        = h.rolling(14).max()
+    df["Stoch_K"] = 100 * (c - low14) / (high14 - low14).replace(0, np.nan)
+    df["Stoch_D"] = df["Stoch_K"].rolling(3).mean()
+
+    # 일목균형표: 전환선(9) / 기준선(26)
+    df["Tenkan"] = (h.rolling(9).max()  + lo.rolling(9).min())  / 2
+    df["Kijun"]  = (h.rolling(26).max() + lo.rolling(26).min()) / 2
+
     return df.dropna()
 
 
@@ -96,6 +131,10 @@ def score_trend(row) -> float:
     else:                           score -= 5
     if row["EMA60"] > row["EMA120"]: score += 5
     else:                            score -= 5
+    # ADX < 20이면 횡보장 → 추세 점수 반감
+    adx = float(row["ADX"]) if "ADX" in row.index else 25
+    if adx < 20:
+        score *= 0.5
     return score
 
 
@@ -111,7 +150,15 @@ def score_momentum(df: pd.DataFrame, idx: int) -> float:
     norm = ret10 * c / atr if atr != 0 else 0  # ATR 정규화 수익률
     # 클리핑
     score = max(-20, min(20, norm * 40))
-    return score
+    # Stochastic 보조 조정
+    stoch_k = float(row["Stoch_K"]) if "Stoch_K" in row.index else 50
+    if stoch_k > 80:
+        score -= 5   # 단기 과매수
+    elif stoch_k < 20:
+        score -= 3   # 과매도 하락 확인
+    elif 40 <= stoch_k <= 60:
+        score += 2   # 중립 에너지 축적
+    return max(-20, min(20, score))
 
 
 def score_structure(df: pd.DataFrame, idx: int) -> float:
@@ -144,6 +191,10 @@ def score_structure(df: pd.DataFrame, idx: int) -> float:
     if last["EMA10"] > last["EMA20"] > last["EMA60"]: score += 8
     elif last["EMA10"] < last["EMA20"] < last["EMA60"]: score -= 8
 
+    # ADX < 20이면 횡보장 → 구조 점수도 부분 감소
+    adx = float(df.iloc[idx]["ADX"]) if "ADX" in df.columns else 25
+    if adx < 20:
+        score *= 0.6
     return max(-20, min(20, score))
 
 
@@ -221,7 +272,37 @@ def score_risk_penalty(df: pd.DataFrame, idx: int) -> float:
         if close_pos < 0.3:
             penalty -= 8
 
+    # OBV 다이버전스: 가격 상승 + OBV 하락 = 신뢰도 감소
+    if idx >= 10 and "OBV" in df.columns:
+        obv_chg   = float(df.iloc[idx]["OBV"]) - float(df.iloc[idx - 10]["OBV"])
+        price_chg = float(df.iloc[idx]["Close"]) - float(df.iloc[idx - 10]["Close"])
+        if price_chg > 0 and obv_chg < 0:
+            penalty -= 5  # 베어리시 다이버전스
+
     return max(-30, penalty)
+
+
+def score_timing(df: pd.DataFrame, idx: int) -> float:
+    """진입 타이밍 점수: 눌림목 품질 (-10~+30)"""
+    if idx < 26:
+        return 0.0
+    row   = df.iloc[idx]
+    score = 0.0
+    # 조정 중 거래량 감소 = 매도 압력 낮음 (건강한 눌림목)
+    rvol = float(row["RVOL"]) if "RVOL" in row.index else 1.0
+    if rvol < 0.8:
+        score += 3
+    # RSI 40~55: 과매수 아닌 에너지 축적 구간
+    if "RSI" in df.columns:
+        rsi = float(row["RSI"])
+        if 40 <= rsi <= 55:
+            score += 4
+    # 현재가 >= 전환선: 일목 단기 지지선 위
+    if "Tenkan" in df.columns:
+        tenkan = float(row["Tenkan"])
+        if tenkan > 0 and float(row["Close"]) >= tenkan:
+            score += 3
+    return max(-10, min(30, score))
 
 
 def calc_fis(df: pd.DataFrame) -> pd.DataFrame:
@@ -235,9 +316,10 @@ def calc_fis(df: pd.DataFrame) -> pd.DataFrame:
         cb = score_compression(df, idx)
         vl = score_volume(row)
         rp = score_risk_penalty(df, idx)
+        tm = score_timing(df, idx)
 
-        raw = (0.28 * t + 0.20 * m + 0.17 * s +
-               0.17 * cb + 0.10 * vl + rp)
+        raw = (0.25 * t + 0.18 * m + 0.15 * s +
+               0.15 * cb + 0.09 * vl + 0.10 * tm + rp)
 
         # 정규화: -100 ~ +100
         fis = max(-100, min(100, raw * 1.2))
@@ -248,6 +330,7 @@ def calc_fis(df: pd.DataFrame) -> pd.DataFrame:
             "CompressionScore": cb,
             "VolumeScore": vl,
             "RiskPenalty": rp,
+            "TimingScore": tm,
             "FIS": fis
         })
     result = pd.DataFrame(records, index=df.index)
@@ -267,7 +350,9 @@ def one_sentence(df_fis: pd.DataFrame) -> dict:
     s    = row["StructureScore"]
     cb   = row["CompressionScore"]
     rp   = row["RiskPenalty"]
+    tm   = float(row["TimingScore"]) if "TimingScore" in row.index else 0
     rvol = row["RVOL"]
+    adx  = float(row["ADX"]) if "ADX" in row.index else 0
 
     # 첫인상 레이블
     if fis >= 70:
@@ -325,6 +410,10 @@ def one_sentence(df_fis: pd.DataFrame) -> dict:
     # 거래량 언급
     if rvol > 2.0:
         extra += " 거래량이 크게 증가해 방향 확인이 필요하다."
+    if tm >= 7:
+        extra += " 눌림목 품질이 우수해 진입 타이밍이 유리한 구간이다."
+    if adx < 20:
+        extra += " ADX가 낮아 횡보장 가능성이 높으니 추세 판단에 신중해야 한다."
 
     sentence = " ".join(parts) + " " + extra
 
@@ -358,8 +447,10 @@ def one_sentence(df_fis: pd.DataFrame) -> dict:
             "구조": s,
             "압축": cb,
             "거래량": row["VolumeScore"],
+            "타이밍": tm,
             "위험감점": rp
-        }
+        },
+        "adx": adx
     }
 
 
@@ -372,16 +463,17 @@ def plot_chart(ticker: str, df_fis: pd.DataFrame, judgment: dict, display_bars: 
     n = len(df_plot)
     dates = np.arange(n)
 
-    fig = plt.figure(figsize=(16, 9), facecolor="#131722")
-    gs = gridspec.GridSpec(3, 1, height_ratios=[5, 1, 1],
+    fig = plt.figure(figsize=(16, 10), facecolor="#131722")
+    gs = gridspec.GridSpec(4, 1, height_ratios=[5, 1, 1, 0.8],
                            hspace=0.04, left=0.06, right=0.88,
                            top=0.95, bottom=0.06)
 
     ax_c  = fig.add_subplot(gs[0])   # 캔들
     ax_v  = fig.add_subplot(gs[1], sharex=ax_c)  # 거래량
-    ax_f  = fig.add_subplot(gs[2], sharex=ax_c)  # FIS
+    ax_r  = fig.add_subplot(gs[2], sharex=ax_c)  # RSI
+    ax_f  = fig.add_subplot(gs[3], sharex=ax_c)  # FIS
 
-    for ax in [ax_c, ax_v, ax_f]:
+    for ax in [ax_c, ax_v, ax_r, ax_f]:
         ax.set_facecolor("#131722")
         ax.tick_params(colors="#B2B5BE", labelsize=8)
         for sp in ax.spines.values():
@@ -408,6 +500,28 @@ def plot_chart(ticker: str, df_fis: pd.DataFrame, judgment: dict, display_bars: 
         vals = df_plot[col].values
         ax_c.plot(dates, vals, color=color, lw=lw, label=label, zorder=4)
 
+    # ── 52주 고점/저점 수평선 ──
+    h52_val = float(df_plot["High52"].iloc[-1])
+    l52_val = float(df_plot["Low52"].iloc[-1])
+    ax_c.axhline(h52_val, color="#FF6F00", lw=0.9, ls="--", alpha=0.55, zorder=3)
+    ax_c.text(n - 1, h52_val, f" 52W H {h52_val:,.0f}",
+              va="bottom", color="#FF6F00", fontsize=7, alpha=0.8)
+    ax_c.axhline(l52_val, color="#26A69A", lw=0.9, ls="--", alpha=0.55, zorder=3)
+    ax_c.text(n - 1, l52_val, f" 52W L {l52_val:,.0f}",
+              va="top", color="#26A69A", fontsize=7, alpha=0.8)
+
+    # ── 일목균형표: 전환선 / 기준선 / 지치코 스팬 ──
+    if "Tenkan" in df_plot.columns:
+        ax_c.plot(dates, df_plot["Tenkan"].values, color="#E91E63",
+                  lw=0.9, label="전환선", zorder=4, alpha=0.85)
+        ax_c.plot(dates, df_plot["Kijun"].values, color="#2196F3",
+                  lw=0.9, label="기준선", zorder=4, alpha=0.85)
+        chikou_x = np.arange(0, n - 26)
+        chikou_y = df_plot["Close"].values[26:]
+        if len(chikou_x) > 0:
+            ax_c.plot(chikou_x, chikou_y, color="#9C27B0",
+                      lw=0.8, ls="--", label="지치코", zorder=3, alpha=0.7)
+
     ax_c.set_xlim(-1, n + 1)
     ax_c.yaxis.tick_right()
     ax_c.yaxis.set_label_position("right")
@@ -427,6 +541,23 @@ def plot_chart(ticker: str, df_fis: pd.DataFrame, judgment: dict, display_bars: 
     ax_v.yaxis.tick_right()
     ax_v.yaxis.set_ticklabels([])
     ax_v.grid(axis="y", color="#2A2E39", lw=0.4)
+
+    # ── RSI 패널 ──
+    if "RSI" in df_plot.columns:
+        rsi_vals = df_plot["RSI"].fillna(50).values
+        ax_r.plot(dates, rsi_vals, color="#F6C90E", lw=1.0, zorder=3)
+        ax_r.axhline(70, color="#E53935", lw=0.6, ls="--", alpha=0.7)
+        ax_r.axhline(30, color="#1E88E5", lw=0.6, ls="--", alpha=0.7)
+        ax_r.axhline(50, color="#B2B5BE", lw=0.4, alpha=0.4)
+        ax_r.fill_between(dates, rsi_vals, 70,
+                          where=(rsi_vals >= 70), alpha=0.2, color="#E53935")
+        ax_r.fill_between(dates, rsi_vals, 30,
+                          where=(rsi_vals <= 30), alpha=0.2, color="#1E88E5")
+    ax_r.set_ylim(0, 100)
+    ax_r.set_ylabel("RSI", color="#B2B5BE", fontsize=7)
+    ax_r.yaxis.tick_right()
+    ax_r.yaxis.set_ticks([30, 50, 70])
+    ax_r.grid(axis="y", color="#2A2E39", lw=0.4)
 
     # ── FIS 바 ──
     fis_vals = df_plot["FIS"].values
@@ -449,6 +580,7 @@ def plot_chart(ticker: str, df_fis: pd.DataFrame, judgment: dict, display_bars: 
     ax_f.set_xticklabels(tick_labs, color="#B2B5BE", fontsize=8)
     plt.setp(ax_c.get_xticklabels(), visible=False)
     plt.setp(ax_v.get_xticklabels(), visible=False)
+    plt.setp(ax_r.get_xticklabels(), visible=False)
 
     # ── CFIE 판단 박스 (우측 상단 오버레이) ──
     fis     = judgment["fis"]
@@ -531,6 +663,34 @@ def plot_chart(ticker: str, df_fis: pd.DataFrame, judgment: dict, display_bars: 
     bar_ax.tick_params(left=True, bottom=False,
                        labelleft=True, labelbottom=False)
     bar_ax.yaxis.tick_left()
+
+    # 5봉 전 대비 화살표 (↑↓→)
+    if len(df_fis) > 5:
+        r5 = df_fis.iloc[-6]
+        s5 = {
+            "추세":    float(r5["TrendScore"])       if "TrendScore"      in r5.index else 0,
+            "모멘텀":  float(r5["MomentumScore"])    if "MomentumScore"   in r5.index else 0,
+            "구조":    float(r5["StructureScore"])   if "StructureScore"  in r5.index else 0,
+            "압축":    float(r5["CompressionScore"]) if "CompressionScore"in r5.index else 0,
+            "거래량":  float(r5["VolumeScore"])      if "VolumeScore"     in r5.index else 0,
+            "타이밍":  float(r5["TimingScore"])      if "TimingScore"     in r5.index else 0,
+            "위험감점":float(r5["RiskPenalty"])      if "RiskPenalty"     in r5.index else 0,
+        }
+    else:
+        s5 = {k: 0 for k in keys}
+    for j, key in enumerate(keys):
+        chg = scores[key] - s5.get(key, 0)
+        arrow  = "↑" if chg > 0.5 else ("↓" if chg < -0.5 else "→")
+        acolor = "#E53935" if arrow == "↑" else ("#1E88E5" if arrow == "↓" else "#888888")
+        bar_ax.text(33, j, arrow, va="center", ha="left",
+                    color=acolor, fontsize=9, fontweight="bold")
+
+    # ADX 칩 (추세 강도)
+    adx_val   = judgment.get("adx", 0)
+    adx_label = "추세장" if adx_val >= 25 else ("약추세" if adx_val >= 20 else "횡보장")
+    adx_color = "#E53935" if adx_val >= 25 else ("#F9A825" if adx_val >= 20 else "#64B5F6")
+    bar_ax.set_title(f"ADX {adx_val:.0f} · {adx_label}",
+                     color=adx_color, fontsize=7.5, pad=2, loc="right")
 
     # 첫인상 라벨 (캔들 차트 우측 상단 귀퉁이)
     ax_c.text(0.01, 0.97, f"첫인상: {label}",

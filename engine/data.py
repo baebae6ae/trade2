@@ -11,6 +11,24 @@ warnings.filterwarnings("ignore")
 
 _LOCK = threading.Lock()   # yfinance 동시 다운로드 방지
 
+TIMEFRAME_CONFIG = {
+    "daily":   {"rule": None,    "label": "일봉", "min_period": "6mo", "range_window": 252},
+    "weekly":  {"rule": "W-FRI", "label": "주봉", "min_period": "5y",  "range_window": 104},
+    "monthly": {"rule": "ME",   "label": "월봉", "min_period": "10y", "range_window": 60},
+    "yearly":  {"rule": "YE",   "label": "년봉", "min_period": "max", "range_window": 12},
+}
+
+PERIOD_ORDER = {
+    "1mo": 1,
+    "3mo": 2,
+    "6mo": 3,
+    "1y": 4,
+    "2y": 5,
+    "5y": 6,
+    "10y": 7,
+    "max": 8,
+}
+
 
 # ── 1. 데이터 수집 ──────────────────────────────────────────
 
@@ -24,6 +42,43 @@ def fetch(ticker: str, period: str = "2y") -> pd.DataFrame:
     df = df[["Open", "High", "Low", "Close", "Volume"]].dropna()
     df.index = pd.to_datetime(df.index)
     return df
+
+
+def normalize_timeframe(timeframe: str | None) -> str:
+    value = (timeframe or "daily").strip().lower()
+    aliases = {
+        "d": "daily", "day": "daily", "daily": "daily", "일": "daily", "일봉": "daily",
+        "w": "weekly", "week": "weekly", "weekly": "weekly", "주": "weekly", "주봉": "weekly",
+        "m": "monthly", "month": "monthly", "monthly": "monthly", "월": "monthly", "월봉": "monthly",
+        "y": "yearly", "year": "yearly", "yearly": "yearly", "년": "yearly", "년봉": "yearly",
+    }
+    return aliases.get(value, "daily")
+
+
+def resolve_fetch_period(period: str, timeframe: str) -> str:
+    timeframe_key = normalize_timeframe(timeframe)
+    requested = (period or "2y").strip().lower()
+    minimum = TIMEFRAME_CONFIG[timeframe_key]["min_period"]
+    if requested not in PERIOD_ORDER:
+        requested = "2y"
+    if PERIOD_ORDER[requested] >= PERIOD_ORDER[minimum]:
+        return requested
+    return minimum
+
+
+def resample_ohlcv(df: pd.DataFrame, timeframe: str = "daily") -> pd.DataFrame:
+    timeframe_key = normalize_timeframe(timeframe)
+    rule = TIMEFRAME_CONFIG[timeframe_key]["rule"]
+    if rule is None:
+        return df.copy()
+    resampled = pd.DataFrame({
+        "Open": df["Open"].resample(rule).first(),
+        "High": df["High"].resample(rule).max(),
+        "Low": df["Low"].resample(rule).min(),
+        "Close": df["Close"].resample(rule).last(),
+        "Volume": df["Volume"].resample(rule).sum(),
+    })
+    return resampled.dropna(subset=["Open", "High", "Low", "Close"])
 
 
 def fetch_market_index(ticker: str, period: str = "5d") -> dict:
@@ -71,9 +126,29 @@ def _atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     return tr.rolling(period).mean()
 
 
-def calc_indicators(df: pd.DataFrame) -> pd.DataFrame:
-    """EMA / ATR / BB / Ichimoku / RVOL / RSI / MACD 추가"""
+def _adx(df: pd.DataFrame, period: int = 14):
+    up_move   = df["High"].diff()
+    down_move = -df["Low"].diff()
+    plus_dm   = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
+    minus_dm  = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
+    tr = pd.concat([
+        df["High"] - df["Low"],
+        (df["High"] - df["Close"].shift()).abs(),
+        (df["Low"] - df["Close"].shift()).abs(),
+    ], axis=1).max(axis=1)
+    atr = tr.ewm(alpha=1 / period, adjust=False).mean()
+    plus_di = 100 * pd.Series(plus_dm, index=df.index).ewm(alpha=1 / period, adjust=False).mean() / atr.replace(0, np.nan)
+    minus_di = 100 * pd.Series(minus_dm, index=df.index).ewm(alpha=1 / period, adjust=False).mean() / atr.replace(0, np.nan)
+    dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+    adx = dx.ewm(alpha=1 / period, adjust=False).mean()
+    return adx, plus_di, minus_di
+
+
+def calc_indicators(df: pd.DataFrame, timeframe: str = "daily") -> pd.DataFrame:
+    """EMA / ATR / BB / Ichimoku / RVOL / RSI / MACD / ADX 추가"""
     df = df.copy()
+    timeframe_key = normalize_timeframe(timeframe)
+    range_window = TIMEFRAME_CONFIG[timeframe_key]["range_window"]
 
     # EMA
     for span in [5, 10, 20, 60, 120]:
@@ -90,6 +165,12 @@ def calc_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["BB_DN"]  = df["BB_MID"] - 2 * std
     df["BB_width"] = (df["BB_UP"] - df["BB_DN"]) / df["BB_MID"]
 
+    # ADX / DI
+    adx, plus_di, minus_di = _adx(df, 14)
+    df["ADX14"] = adx
+    df["PLUS_DI14"] = plus_di
+    df["MINUS_DI14"] = minus_di
+
     # Ichimoku (9/26/52)
     hi9  = df["High"].rolling(9).max();  lo9  = df["Low"].rolling(9).min()
     hi26 = df["High"].rolling(26).max(); lo26 = df["Low"].rolling(26).min()
@@ -105,12 +186,18 @@ def calc_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["Vol60"] = df["Volume"].rolling(60).mean()
     df["RVOL"]  = df["Volume"] / df["Vol20"].replace(0, np.nan)
 
-    # 52주 고저
-    df["High52"] = df["High"].rolling(252).max()
-    df["Low52"]  = df["Low"].rolling(252).min()
+    # 장기 위치 범위
+    df["RangeHigh"] = df["High"].rolling(range_window, min_periods=max(5, range_window // 4)).max()
+    df["RangeLow"]  = df["Low"].rolling(range_window, min_periods=max(5, range_window // 4)).min()
+    df["High52"] = df["RangeHigh"]
+    df["Low52"]  = df["RangeLow"]
 
     # RSI14
     df["RSI14"] = _rsi(df["Close"], 14)
+
+    # 가격 변화율
+    df["ROC5"]  = df["Close"].pct_change(5) * 100
+    df["ROC20"] = df["Close"].pct_change(20) * 100
 
     # MACD (12/26/9)
     ema12 = _ema(df["Close"], 12)
@@ -119,8 +206,15 @@ def calc_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["MACD_SIG"]  = _ema(df["MACD"], 9)
     df["MACD_HIST"] = df["MACD"] - df["MACD_SIG"]
 
-    df.dropna(subset=["EMA60", "ICH_SENKOU_A"], inplace=True)
-    return df
+    # 캔들 구조 보조
+    spread = (df["High"] - df["Low"]).replace(0, np.nan)
+    df["ClosePos"] = ((df["Close"] - df["Low"]) / spread).clip(0, 1)
+    df["UpperWickRatio"] = (df["High"] - df[["Open", "Close"]].max(axis=1)) / spread
+    df["LowerWickRatio"] = (df[["Open", "Close"]].min(axis=1) - df["Low"]) / spread
+    df["BodyPct"] = (df["Close"] - df["Open"]).abs() / spread
+
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    return df.dropna(subset=["Open", "High", "Low", "Close"])
 
 
 # ── 3. 종목 정보 ──────────────────────────────────────────

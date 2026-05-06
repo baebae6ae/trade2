@@ -43,7 +43,7 @@ function renderResults(candidates, label) {
   const gridEl  = document.getElementById("candidatesGrid");
   countEl.textContent = candidates.length + "개";
   document.getElementById("resultLabel").textContent =
-    `${label} 눌림목 진입 후보 (강한 추세 + 현재 쉬는 중 · 진입점수 높은 순)`;
+    `${label} 상승 우위 진입 후보 (진입 점수 높은 순)`;
 
   if (!candidates.length) {
     gridEl.innerHTML = `
@@ -58,9 +58,9 @@ function renderResults(candidates, label) {
 
   gridEl.innerHTML = candidates.map(c => {
     const col    = fisColorGlobal(c.fis);
-    // entry_score 색상: 20+ 진한 녹, 12+ 연녹, 8+ 노랑
+      // entry_score 색상: 80+ 진한 녹, 65+ 연녹, 50+ 노랑
     const eScore = c.entry_score ?? 0;
-    const eCol   = eScore >= 20 ? "#2ea043" : eScore >= 12 ? "#56d364" : "#d29922";
+      const eCol   = eScore >= 80 ? "#2ea043" : eScore >= 65 ? "#56d364" : eScore >= 50 ? "#d29922" : "#6e7681";
     const tCls   = c.trend >= 10 ? "pos" : "neg";
     const mCls   = c.momentum >= 5 ? "pos" : c.momentum < 0 ? "neg" : "";
     // EMA20 이격률 계산 (표시용)
@@ -74,7 +74,7 @@ function renderResults(candidates, label) {
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
             <div class="cc-fis-badge" style="background:${col}">FIS ${c.fis>=0?"+":""}${c.fis.toFixed(0)}</div>
-            <div class="cc-fis-badge" style="background:${eCol};font-size:11px">진입점 ${eScore>=0?"+":""}${eScore.toFixed(0)}</div>
+            <div class="cc-fis-badge" style="background:${eCol};font-size:11px">진입 점수 ${eScore>=0?"+":""}${eScore.toFixed(0)}</div>
           </div>
         </div>
         <div class="cc-label" style="color:${col}">${c.label}</div>
@@ -82,7 +82,7 @@ function renderResults(candidates, label) {
         <div class="cc-scores">
           <span class="cs-chip ${tCls}" title="추세점수">추세 ${c.trend>=0?"+":""}${c.trend.toFixed(0)}</span>
           <span class="cs-chip ${mCls}" title="모멘텀 — 낮을수록 눌림">모멘텀 ${c.momentum>=0?"+":""}${c.momentum.toFixed(0)}</span>
-          <span class="cs-chip pos" style="background:rgba(46,160,67,0.12);color:#56d364" title="진입 타이밍 점수">진입 ${eScore>=0?"+":""}${eScore.toFixed(0)}</span>
+          <span class="cs-chip pos" style="background:rgba(46,160,67,0.12);color:#56d364" title="진입 타이밍 점수">진입 점수 ${eScore>=0?"+":""}${eScore.toFixed(0)}</span>
           <span class="cs-chip" title="일목균형표">${c.ichimoku.split("—")[0].trim()}</span>
         </div>
         <div class="cc-actions">

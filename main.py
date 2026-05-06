@@ -1,5 +1,5 @@
 """
-main.py — CFIE v3.7 진입점
+main.py — CFIE v3.7 진입 점수
 Flask 서버를 시작하고 기본 브라우저로 홈페이지를 엽니다.
 
 실행:

@@ -37,7 +37,8 @@ def _fig_to_b64(fig) -> str:
 
 
 def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
-                      ticker: str, display_bars: int = 220) -> str:
+                      ticker: str, display_bars: int = 220,
+                      timeframe: str = "daily") -> str:
     """
     캔들 + 이동평균 + 볼린저 + 일목균형표 + 거래량 + MACD + RSI + FIS
     → base64 PNG 문자열 반환
@@ -45,22 +46,35 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
     df = df_fis.iloc[-display_bars:].copy()
     n  = len(df)
     xs = np.arange(n)
+    timeframe_label_map = {
+        "daily": "일봉",
+        "weekly": "주봉",
+        "monthly": "월봉",
+        "yearly": "년봉",
+    }
+    date_fmt_map = {
+        "daily": "%y/%m/%d",
+        "weekly": "%y/%m",
+        "monthly": "%Y/%m",
+        "yearly": "%Y",
+    }
+    timeframe_label = timeframe_label_map.get(timeframe, "일봉")
+    date_fmt = date_fmt_map.get(timeframe, "%y/%m/%d")
 
     fig = plt.figure(figsize=(16, 11), facecolor=BG)
     gs  = gridspec.GridSpec(
-        5, 1,
-        height_ratios=[4, 1, 1, 1, 1],
+        4, 1,
+        height_ratios=[5, 1, 1, 1],
         hspace=0.04,
         left=0.04, right=0.86,
         top=0.96, bottom=0.05
     )
-    ax_c  = fig.add_subplot(gs[0])
-    ax_ich = fig.add_subplot(gs[1], sharex=ax_c)
-    ax_v  = fig.add_subplot(gs[2], sharex=ax_c)
-    ax_m  = fig.add_subplot(gs[3], sharex=ax_c)
-    ax_f  = fig.add_subplot(gs[4], sharex=ax_c)
+    ax_c = fig.add_subplot(gs[0])
+    ax_v = fig.add_subplot(gs[1], sharex=ax_c)
+    ax_m = fig.add_subplot(gs[2], sharex=ax_c)
+    ax_f = fig.add_subplot(gs[3], sharex=ax_c)
 
-    for ax in [ax_c, ax_ich, ax_v, ax_m, ax_f]:
+    for ax in [ax_c, ax_v, ax_m, ax_f]:
         ax.set_facecolor(BG)
         ax.tick_params(colors=TEXT, labelsize=7.5)
         for sp in ax.spines.values():
@@ -98,34 +112,32 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
         ax_c.fill_between(xs, df["BB_UP"].values, df["BB_DN"].values,
                           alpha=0.04, color="#78909C")
 
-    ax_c.set_xlim(-1, n + 1)
-    ax_c.legend(loc="upper left", fontsize=6.5,
-                facecolor=BG2, edgecolor=GRID,
-                labelcolor="white", ncol=6, framealpha=0.8)
-
-    # ── 일목균형표 패널 ──
-    if all(c in df.columns for c in ["ICH_TENKAN", "ICH_KIJUN",
-                                      "ICH_SENKOU_A", "ICH_SENKOU_B"]):
-        ax_ich.fill_between(
+    # ── 일목균형표 — 캔들 위에 오버레이 ──
+    if all(col in df.columns for col in ["ICH_TENKAN", "ICH_KIJUN",
+                                          "ICH_SENKOU_A", "ICH_SENKOU_B"]):
+        ax_c.fill_between(
             xs,
             df["ICH_SENKOU_A"].values,
             df["ICH_SENKOU_B"].values,
             where=df["ICH_SENKOU_A"].values >= df["ICH_SENKOU_B"].values,
-            alpha=0.3, color=BULL, label="구름(상승)"
+            alpha=0.13, color=BULL, zorder=1, label="구름(상승)"
         )
-        ax_ich.fill_between(
+        ax_c.fill_between(
             xs,
             df["ICH_SENKOU_A"].values,
             df["ICH_SENKOU_B"].values,
             where=df["ICH_SENKOU_A"].values < df["ICH_SENKOU_B"].values,
-            alpha=0.3, color=BEAR, label="구름(하락)"
+            alpha=0.13, color=BEAR, zorder=1, label="구름(하락)"
         )
-        ax_ich.plot(xs, df["ICH_TENKAN"].values, color="#F44336", lw=0.9, label="전환선")
-        ax_ich.plot(xs, df["ICH_KIJUN"].values,  color="#2196F3", lw=0.9, label="기준선")
-        ax_ich.legend(loc="upper left", fontsize=6,
-                      facecolor=BG2, edgecolor=GRID,
-                      labelcolor="white", ncol=4, framealpha=0.8)
-    ax_ich.set_ylabel("일목", color=TEXT, fontsize=6.5)
+        ax_c.plot(xs, df["ICH_TENKAN"].values,
+                  color="#F44336", lw=0.85, ls="-.", label="전환", zorder=4)
+        ax_c.plot(xs, df["ICH_KIJUN"].values,
+                  color="#2196F3", lw=0.85, ls="-.", label="기준", zorder=4)
+
+    ax_c.set_xlim(-1, n + 1)
+    ax_c.legend(loc="upper left", fontsize=6.5,
+                facecolor=BG2, edgecolor=GRID,
+                labelcolor="white", ncol=8, framealpha=0.8)
 
     # ── 거래량 ──
     for i, (_, row) in enumerate(df.iterrows()):
@@ -162,10 +174,10 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
     # X축 날짜
     step      = max(1, n // 12)
     tick_pos  = list(range(0, n, step))
-    tick_labs = [df.index[i].strftime("%y/%m/%d") for i in tick_pos]
+    tick_labs = [df.index[i].strftime(date_fmt) for i in tick_pos]
     ax_f.set_xticks(tick_pos)
     ax_f.set_xticklabels(tick_labs, color=TEXT, fontsize=7.5, rotation=15)
-    for ax in [ax_c, ax_ich, ax_v, ax_m]:
+    for ax in [ax_c, ax_v, ax_m]:
         plt.setp(ax.get_xticklabels(), visible=False)
 
     # ── CFIE 판단 오버레이 (우측) ──
@@ -241,7 +253,7 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
               va="top", ha="left",
               color=lcolor, fontsize=12, fontweight="bold",
               bbox=dict(facecolor=BG, edgecolor="none", alpha=0.75, pad=2))
-    ax_c.text(0.01, 0.90, f"{ticker}  {last_close:,.2f}",
+    ax_c.text(0.01, 0.90, f"{ticker} [{timeframe_label}]  {last_close:,.2f}",
               transform=ax_c.transAxes,
               va="top", ha="left",
               color=TEXT, fontsize=9.5,

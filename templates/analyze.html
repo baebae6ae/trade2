@@ -28,6 +28,12 @@
     <div id="searchDropdown" class="search-dropdown hidden"></div>
   </div>
   <div class="topbar-right">
+    <select id="timeframeSelect" class="period-select" onchange="reloadChart()">
+      <option value="daily" selected>일봉</option>
+      <option value="weekly">주봉</option>
+      <option value="monthly">월봉</option>
+      <option value="yearly">년봉</option>
+    </select>
     <select id="periodSelect" class="period-select" onchange="reloadChart()">
       <option value="6mo">6개월</option>
       <option value="1y">1년</option>

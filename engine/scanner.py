@@ -3,56 +3,11 @@
 import concurrent.futures
 import numpy as np
 from engine.data import fetch, calc_indicators
-from engine.fis  import calc_fis, make_judgment
+from engine.fis  import calc_fis, make_judgment, calc_entry_score
 
 
 def _calc_entry_score(df_fis) -> float:
-    """
-    진입 타이밍 점수 (-10 ~ +30)
-
-    FIS가 높다 = '지금 강하다'
-    Entry Score가 높다 = '강한 추세 중에서 지금 쉬고 있다' (눌림목/횡보)
-
-    구성:
-      EMA20 이격률   : ≤2% → +12 / ≤5% → +6 / >10% → -5  (이격 작을수록 눌림 완료)
-      최근 5봉 조정폭: 3~12% 조정 → +10 / >15% 과락 → -5  (적정 조정이 있었는가)
-      52주 위치      : 65~90% → +8 / 90~95% → +3 / >95% → -4  (저항 근접 감점)
-    """
-    last = df_fis.iloc[-1]
-    c    = float(last["Close"])
-    entry = 0.0
-
-    # 1. EMA20 이격률 — 눌림 감지 (방향 포함)
-    #    abs() 대신 방향 포함: 위쪽 이격이면 아직 안 눌렸을 수도 있음
-    ema20 = float(last["EMA20"])
-    if ema20 > 0:
-        gap_pct = (c - ema20) / ema20 * 100   # 양수=위, 음수=아래
-        if -2 <= gap_pct <= 3:   entry += 12  # EMA20 근접 (눌림 완료 구간)
-        elif gap_pct <= 6:       entry += 6   # 약간 위 (아직 여유)
-        elif gap_pct <= 12:      entry += 0   # 다소 이격
-        elif gap_pct > 12:       entry -= 5   # 과열 — 아직 EMA 안 눌렸음
-        elif gap_pct < -5:       entry -= 3   # 너무 아래 (추세 훼손 가능)
-
-    # 2. 최근 5봉 고점 대비 조정 여부 — 이전 고점에서 얼마나 빠졌는가
-    if len(df_fis) >= 6:
-        recent_high = float(df_fis.iloc[-6:-1]["High"].max())
-        if recent_high > 0:
-            pullback_pct = (recent_high - c) / recent_high * 100
-            if 3 <= pullback_pct <= 12:   entry += 10   # 적정 눌림
-            elif pullback_pct > 15:       entry -= 5    # 너무 많이 빠짐 (추세 훼손 가능)
-
-    # 3. 52주 고저 위치 — sweet spot 65~90%
-    h52 = float(last["High52"])
-    l52 = float(last["Low52"])
-    rng = h52 - l52
-    if rng > 0:
-        pos52 = (c - l52) / rng * 100
-        if 65 <= pos52 <= 90:    entry += 8    # 상위권, 저항 여유 있음
-        elif 90 < pos52 <= 95:   entry += 3
-        elif pos52 > 95:         entry -= 4    # 52주 고점 저항권
-        # 60% 미만은 가점 없음 (추세 약함)
-
-    return float(np.clip(entry, -10, 30))
+    return float(calc_entry_score(df_fis)["score"])
 
 KOSPI = [
     ("005930.KS","삼성전자"),("000660.KS","SK하이닉스"),("005380.KS","현대차"),
@@ -128,10 +83,9 @@ def scan_market(market: str) -> list:
     """
     지정 시장 전체 스캔 -> 신규 진입 후보
 
-    필터 (이전 → 개선):
-      이전: FIS ≥ 40 AND trend ≥ 10 AND risk > -15  (= 많이 오른 순)
-      개선: FIS ≥ 30 AND entry_score ≥ 8 AND risk > -8 AND momentum < 18
-            → '강한 추세에 있지만 지금 눌림/횡보 중인 종목'
+        필터:
+            FIS ≥ 30 AND entry_score ≥ 55 AND risk > -16 AND trend > 0
+            → '상승 우위가 유지되면서 눌림 품질이 양호한 종목'
 
     정렬: entry_score 높은 순 (눌림 품질 우선)
     """
@@ -146,9 +100,9 @@ def scan_market(market: str) -> list:
     candidates = [
         r for r in results
         if r["fis"] >= 30
-        and r["entry_score"] >= 8
-        and r["risk"] > -8
-        and r["momentum"] < 18
+        and r["entry_score"] >= 55
+        and r["risk"] > -16
+        and r["trend"] > 0
     ]
     candidates.sort(key=lambda x: x["entry_score"], reverse=True)
     return candidates

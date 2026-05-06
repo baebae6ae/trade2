@@ -27,6 +27,55 @@
 .mp-card-value.bear { color: var(--bear); }
 .mp-card-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
 
+.mp-analysis {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 28px;
+}
+.mp-analysis-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.mp-analysis-title { font-size: 16px; font-weight: 800; }
+.mp-analysis-sub { font-size: 13px; color: var(--text2); margin-top: 4px; line-height: 1.5; }
+.mp-analysis-badge {
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+}
+.mp-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.mp-analysis-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+.mp-analysis-label { font-size: 11px; color: var(--text3); font-weight: 700; margin-bottom: 6px; text-transform: uppercase; }
+.mp-analysis-value { font-size: 18px; font-weight: 800; }
+.mp-analysis-note { font-size: 12px; color: var(--text3); margin-top: 4px; line-height: 1.45; }
+.mp-analysis-points { display: grid; gap: 8px; }
+.mp-analysis-point {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* 포지션 테이블 */
 .mp-table-wrap {
   background: var(--bg2);
@@ -74,6 +123,15 @@
 .mp-table tr:hover td { background: rgba(255,255,255,0.025); }
 .mp-name   { font-size: 14px; font-weight: 700; }
 .mp-ticker { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.mp-signal-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.mp-signal {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+.mp-signal-risk { background: rgba(21,101,192,0.10); color: #64B5F6; border-color: rgba(21,101,192,0.22); }
 .mp-bull   { color: var(--bull); font-weight: 700; }
 .mp-bear   { color: var(--bear); font-weight: 700; }
 .mp-actions { display: flex; gap: 6px; justify-content: flex-end; }

@@ -1,324 +1,601 @@
-﻿"""engine/fis.py — FIS(First Impression Score) 계산 + 한문장 판단"""
+﻿"""engine/fis.py — FIS(First Impression Score)와 진입 점수 계산"""
 
 import numpy as np
 import pandas as pd
 
 
-# ─────────────────────────────────────────────────────────
-# 레이어 1 — 방향 인상 (±30)
-# 추세가 위인가 아래인가
-# ─────────────────────────────────────────────────────────
+def _fnum(value, default: float = 0.0) -> float:
+    try:
+        if pd.isna(value):
+            return default
+        return float(value)
+    except Exception:
+        return default
 
-def score_trend(row) -> float:
-    """
-    Close vs EMA20  : ±10
-    Close vs EMA60  : ±10
-    EMA20 vs EMA60  : ±5
-    EMA60 vs EMA120 : ±5
-    합계 최대 ±30
-    """
+
+def _clip(value: float, low: float, high: float) -> float:
+    return float(np.clip(value, low, high))
+
+
+def _range_pos(close: float, low: float, high: float, default: float = 0.5) -> float:
+    if high <= low:
+        return default
+    return _clip((close - low) / (high - low), 0.0, 1.0)
+
+
+def _cloud_status(row: pd.Series) -> tuple[str, int]:
+    cloud_a = _fnum(row.get("ICH_SENKOU_A"), np.nan)
+    cloud_b = _fnum(row.get("ICH_SENKOU_B"), np.nan)
+    close = _fnum(row.get("Close"))
+    if np.isnan(cloud_a) or np.isnan(cloud_b):
+        return "구름 정보 부족", 0
+    top = max(cloud_a, cloud_b)
+    bottom = min(cloud_a, cloud_b)
+    if close > top:
+        return "구름 위 — 매수 우세", 1
+    if close < bottom:
+        return "구름 아래 — 매도 우세", -1
+    return "구름 내부 — 중립", 0
+
+
+def score_trend(df: pd.DataFrame, idx: int) -> float:
+    row = df.iloc[idx]
+    close = _fnum(row.get("Close"))
+    ema20 = _fnum(row.get("EMA20"), close)
+    ema60 = _fnum(row.get("EMA60"), close)
+    ema120 = _fnum(row.get("EMA120"), close)
     score = 0.0
-    c = float(row["Close"])
-    if c > row["EMA20"]:          score += 10
-    else:                         score -= 10
-    if c > row["EMA60"]:          score += 10
-    else:                         score -= 10
-    if row["EMA20"] > row["EMA60"]:  score += 5
-    else:                            score -= 5
-    if row["EMA60"] > row["EMA120"]: score += 5
-    else:                            score -= 5
-    return score
 
+    score += 6 if close >= ema20 else -6
+    score += 7 if close >= ema60 else -7
+    score += 6 if ema20 >= ema60 else -6
+    score += 5 if ema60 >= ema120 else -5
 
-# ─────────────────────────────────────────────────────────
-# 레이어 2 — 힘 인상 (±20)
-# 강한가 약한가 — 10봉 수익률 ÷ ATR 정규화
-# ─────────────────────────────────────────────────────────
+    if idx >= 8:
+        score += 3 if ema20 >= _fnum(df.iloc[idx - 8].get("EMA20"), ema20) else -3
+
+    adx = _fnum(row.get("ADX14"), 18)
+    plus_di = _fnum(row.get("PLUS_DI14"), 0)
+    minus_di = _fnum(row.get("MINUS_DI14"), 0)
+    if adx >= 22:
+        score += 3 if plus_di >= minus_di else -3
+    elif adx < 15:
+        score -= 1 if abs(close - ema20) < max(_fnum(row.get("ATR14"), 0), close * 0.005) else 0
+
+    return _clip(score, -30, 30)
+
 
 def score_momentum(df: pd.DataFrame, idx: int) -> float:
-    """
-    최근 10봉 수익률을 ATR 기준으로 정규화
-    정규화값 × 40 → clip(±20)
-    """
-    if idx < 10:
-        return 0.0
-    row  = df.iloc[idx]
-    past = float(df.iloc[idx - 10]["Close"])
-    ret10 = (float(row["Close"]) - past) / past if past != 0 else 0.0
-    atr   = float(row["ATR14"])
-    c     = float(row["Close"])
-    norm  = ret10 * c / atr if atr != 0 else 0.0
-    return float(np.clip(norm * 40, -20, 20))
+    row = df.iloc[idx]
+    close = _fnum(row.get("Close"))
+    atr = _fnum(row.get("ATR14"))
+    atr_pct = atr / close * 100 if close > 0 and atr > 0 else 1.0
+    roc20 = _fnum(row.get("ROC20"))
+    macd_hist = _fnum(row.get("MACD_HIST"))
+    rsi = _fnum(row.get("RSI14"), 50)
 
+    impulse = roc20 / max(atr_pct * 2.5, 0.5)
+    score = _clip(impulse * 6, -8, 8)
 
-# ─────────────────────────────────────────────────────────
-# 레이어 3 — 구조 인상 (±20)
-# 고저점 계단 + MA 배열 + 역방향 캔들
-# ─────────────────────────────────────────────────────────
+    if atr > 0:
+        score += _clip((macd_hist / atr) * 120, -4, 4)
 
-def score_structure(df: pd.DataFrame, idx: int) -> float:
-    """
-    고점 계단식 상승/하락 : ±6
-    저점 계단식 상승/하락 : ±6
-    최근 10봉 큰 음봉 수  : -2/개 (최대 -8)
-    EMA 정배열/역배열     : ±8
-    합계 clip(±20)
-    """
-    if idx < 20:
-        return 0.0
-    win    = df.iloc[idx - 20: idx + 1]
-    highs  = win["High"].values
-    lows   = win["Low"].values
-    closes = win["Close"].values
-    opens  = win["Open"].values
-    atr    = float(df.iloc[idx]["ATR14"])
-    score  = 0.0
-
-    # 고점 구조
-    if highs[-1] > highs[-11] > highs[0]:    score += 6
-    elif highs[-1] < highs[-11] < highs[0]:  score -= 6
-
-    # 저점 구조
-    if lows[-1] > lows[-11] > lows[0]:       score += 6
-    elif lows[-1] < lows[-11] < lows[0]:     score -= 6
-
-    # 최근 10봉 큰 역방향(음봉) 캔들 감점
-    big_bear = sum(
-        1 for i in range(-10, 0)
-        if (closes[i] < opens[i]) and abs(closes[i] - opens[i]) > atr * 0.8
-    )
-    score -= min(8, big_bear * 2)
-
-    # EMA 배열
-    last = df.iloc[idx]
-    if last["EMA10"] > last["EMA20"] > last["EMA60"]:    score += 8
-    elif last["EMA10"] < last["EMA20"] < last["EMA60"]:  score -= 8
-
-    return float(np.clip(score, -20, 20))
-
-
-# ─────────────────────────────────────────────────────────
-# 레이어 4 — 압축/위치 인상 (±20)
-# 공간이 있는가, 돌파 직전인가
-# ─────────────────────────────────────────────────────────
-
-def score_compression(df: pd.DataFrame, idx: int) -> float:
-    """
-    ATR14 < ATR60 × 0.75 (변동성 수축)   : +8
-    ATR14 > ATR60 × 1.3  (과도 확장)      : -4
-    BB폭  < 60봉 하위25%                  : +6
-    52주 고점 여유 > 20%                  : +6
-    52주 고점 여유 < 5%  (저항 근접)      : -6
-    합계 clip(±20)
-    """
-    if idx < 60:
-        return 0.0
-    row   = df.iloc[idx]
-    score = 0.0
-
-    # 변동성 수축
-    if row["ATR14"] < row["ATR60"] * 0.75:
-        score += 8
-    elif row["ATR14"] > row["ATR60"] * 1.3:
+    if 55 <= rsi <= 68:
+        score += 4
+    elif 45 <= rsi < 55:
+        score += 1.5
+    elif rsi >= 75:
+        score -= 2.5
+    elif rsi <= 35:
         score -= 4
 
-    # 볼린저 폭 수축
-    bb_hist = df["BB_width"].iloc[max(0, idx - 60): idx + 1]
-    if row["BB_width"] < bb_hist.quantile(0.25):
-        score += 6
+    if idx >= 3:
+        score += 2 if close >= _fnum(df.iloc[idx - 3].get("Close"), close) else -2
 
-    # 52주 고점 공간
-    h52 = float(row["High52"])
-    c   = float(row["Close"])
-    if h52 > 0:
-        room = (h52 - c) / h52
-        if room > 0.20:    score += 6
-        elif room < 0.05:  score -= 6
-
-    return float(np.clip(score, -20, 20))
+    return _clip(score, -20, 20)
 
 
-# ─────────────────────────────────────────────────────────
-# 레이어 5 — 거래량 인상 (±10)
-# ─────────────────────────────────────────────────────────
+def score_structure(df: pd.DataFrame, idx: int) -> float:
+    if idx < 8:
+        return 0.0
+    row = df.iloc[idx]
+    win = df.iloc[max(0, idx - 20): idx + 1]
+    score = 0.0
 
-def score_volume(row) -> float:
-    """
-    RVOL > 2.0  : +10
-    RVOL > 1.5  : +6
-    RVOL > 1.0  : +2
-    RVOL > 0.7  : -2
-    else        : -6
-    """
-    rvol = float(row.get("RVOL", 1.0))
-    if np.isnan(rvol):  return 0.0
-    if rvol > 2.0:      return 10.0
-    elif rvol > 1.5:    return 6.0
-    elif rvol > 1.0:    return 2.0
-    elif rvol > 0.7:    return -2.0
-    return -6.0
+    first_high = _fnum(win.iloc[0].get("High"))
+    mid_high = _fnum(win.iloc[len(win) // 2].get("High"), first_high)
+    last_high = _fnum(win.iloc[-1].get("High"), mid_high)
+    first_low = _fnum(win.iloc[0].get("Low"))
+    mid_low = _fnum(win.iloc[len(win) // 2].get("Low"), first_low)
+    last_low = _fnum(win.iloc[-1].get("Low"), mid_low)
+
+    if last_high > mid_high > first_high:
+        score += 5
+    elif last_high < mid_high < first_high:
+        score -= 5
+
+    if last_low > mid_low > first_low:
+        score += 5
+    elif last_low < mid_low < first_low:
+        score -= 5
+
+    cloud_text, cloud_dir = _cloud_status(row)
+    score += cloud_dir * 4
+
+    kijun = _fnum(row.get("ICH_KIJUN"), _fnum(row.get("EMA20"), 0))
+    close = _fnum(row.get("Close"))
+    score += 3 if close >= kijun else -3
+
+    range_pos = _range_pos(close, _fnum(win["Low"].min()), _fnum(win["High"].max()))
+    if range_pos >= 0.65:
+        score += 3
+    elif range_pos <= 0.35:
+        score -= 3
+
+    bearish_bars = ((win["Close"] < win["Open"]) & (win["ClosePos"] < 0.4)).tail(6).sum()
+    score -= min(4, bearish_bars)
+
+    return _clip(score, -20, 20)
 
 
-# ─────────────────────────────────────────────────────────
-# 위험 감점 (최대 -30)
-# ─────────────────────────────────────────────────────────
+def score_compression(df: pd.DataFrame, idx: int) -> float:
+    row = df.iloc[idx]
+    score = 0.0
+
+    atr14 = _fnum(row.get("ATR14"))
+    atr60 = _fnum(row.get("ATR60"), atr14)
+    if atr14 > 0 and atr60 > 0:
+        ratio = atr14 / atr60
+        if ratio <= 0.85:
+            score += 6
+        elif ratio >= 1.25:
+            score -= 4
+
+    bb_width = _fnum(row.get("BB_width"), np.nan)
+    bb_hist = df["BB_width"].iloc[max(0, idx - 60): idx + 1].dropna()
+    if len(bb_hist) >= 10 and not np.isnan(bb_width):
+        pct_rank = float((bb_hist <= bb_width).mean())
+        if pct_rank <= 0.25:
+            score += 5
+        elif pct_rank >= 0.85:
+            score -= 3
+
+    close = _fnum(row.get("Close"))
+    range_pos = _range_pos(close, _fnum(row.get("RangeLow")), _fnum(row.get("RangeHigh")))
+    if 0.55 <= range_pos <= 0.88:
+        score += 5
+    elif range_pos > 0.96:
+        score -= 4
+    elif range_pos < 0.35:
+        score -= 5
+
+    ema20 = _fnum(row.get("EMA20"), close)
+    if atr14 > 0:
+        stretch = abs(close - ema20) / atr14
+        if stretch <= 1.2:
+            score += 4
+        elif stretch >= 3.0:
+            score -= 4
+
+    return _clip(score, -20, 20)
+
+
+def score_volume(df: pd.DataFrame, idx: int) -> float:
+    row = df.iloc[idx]
+    rvol = _fnum(row.get("RVOL"), 1.0)
+    close = _fnum(row.get("Close"))
+    open_price = _fnum(row.get("Open"), close)
+    close_pos = _fnum(row.get("ClosePos"), 0.5)
+    score = 0.0
+
+    if rvol >= 1.8:
+        score += 4
+    elif rvol >= 1.2:
+        score += 2
+    elif rvol < 0.75:
+        score -= 2
+
+    if close >= open_price and close_pos >= 0.65:
+        score += 3 if rvol >= 1.0 else 1.5
+    elif close < open_price and close_pos <= 0.35 and rvol >= 1.2:
+        score -= 4
+
+    recent = df.iloc[max(0, idx - 4): idx + 1]
+    up_vol = _fnum(recent.loc[recent["Close"] >= recent["Open"], "Volume"].sum())
+    down_vol = _fnum(recent.loc[recent["Close"] < recent["Open"], "Volume"].sum())
+    if up_vol > down_vol * 1.2:
+        score += 3
+    elif down_vol > up_vol * 1.2 and down_vol > 0:
+        score -= 3
+
+    return _clip(score, -10, 10)
+
 
 def score_risk_penalty(df: pd.DataFrame, idx: int) -> float:
-    """
-    EMA20 이격 > 3 ATR   : -15
-    EMA20 이격 > 2 ATR   : -8
-    (음방향 동일 적용)
-    최근 5봉 윗꼬리 과다  : -2/개 (최대 -10)
-    RVOL>2 + 종가하위30% : -8 (분산 매도 징후)
-    합계 최대 -30
-    """
-    if idx < 5:
-        return 0.0
-    row     = df.iloc[idx]
+    row = df.iloc[idx]
+    close = _fnum(row.get("Close"))
+    ema20 = _fnum(row.get("EMA20"), close)
+    ema60 = _fnum(row.get("EMA60"), close)
+    atr = _fnum(row.get("ATR14"))
+    rvol = _fnum(row.get("RVOL"), 1.0)
     penalty = 0.0
-    c       = float(row["Close"])
-    atr     = float(row["ATR14"])
-    ema20   = float(row["EMA20"])
 
-    # 과열/과매도 이격
     if atr > 0:
-        gap = (c - ema20) / atr
-        if   gap >  3.0:  penalty -= 15
-        elif gap >  2.0:  penalty -= 8
-        elif gap < -3.0:  penalty -= 15
-        elif gap < -2.0:  penalty -= 8
+        gap_atr = (close - ema20) / atr
+        if gap_atr >= 3.5:
+            penalty -= 14
+        elif gap_atr >= 2.7:
+            penalty -= 8
+        elif gap_atr <= -3.0:
+            penalty -= 10
+        elif gap_atr <= -2.2:
+            penalty -= 6
 
-    # 윗꼬리 과다 (최근 5봉)
-    upper_tails = 0
-    for _, r in df.iloc[max(0, idx - 5): idx + 1].iterrows():
-        body = abs(float(r["Close"]) - float(r["Open"]))
-        tail = float(r["High"]) - max(float(r["Close"]), float(r["Open"]))
-        if body > 0 and tail > body * 0.5:
-            upper_tails += 1
-    penalty -= min(10, upper_tails * 2)
+    recent = df.iloc[max(0, idx - 4): idx + 1]
+    upper_wick_count = int((recent["UpperWickRatio"].fillna(0) > 0.45).sum())
+    penalty -= min(8, upper_wick_count * 2)
 
-    # 거래량 폭증 후 종가 약함 (분산 매도)
-    if float(row["RVOL"]) > 2.0:
-        day_range = float(row["High"]) - float(row["Low"])
-        if day_range > 0:
-            close_pos = (float(row["Close"]) - float(row["Low"])) / day_range
-            if close_pos < 0.3:
-                penalty -= 8
+    close_pos = _fnum(row.get("ClosePos"), 0.5)
+    if rvol >= 1.8 and close_pos <= 0.3 and close < _fnum(row.get("Open"), close):
+        penalty -= 6
 
-    return float(np.clip(penalty, -30, 0))
+    range_pos = _range_pos(close, _fnum(row.get("RangeLow")), _fnum(row.get("RangeHigh")))
+    if range_pos >= 0.97 and close < _fnum(row.get("Open"), close):
+        penalty -= 4
 
+    adx = _fnum(row.get("ADX14"), 18)
+    if adx < 16 and abs(close - ema20) <= max(atr * 0.5, close * 0.004) and abs(close - ema60) <= max(atr * 0.8, close * 0.006):
+        penalty -= 4
 
-# ─────────────────────────────────────────────────────────
-# FIS 종합 계산
-# ─────────────────────────────────────────────────────────
+    return _clip(penalty, -30, 0)
+
 
 def calc_fis(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    FIS = clip(1.2 × (Trend + Momentum + Structure + Compression + Volume + RiskPenalty), -100, 100)
-
-    각 레이어 점수는 가중 합산이 아닌 직접 합산.
-    최대 raw = 30+20+20+20+10 = 100  → FIS max ≈ 100
-    최소 raw ≈ -30-20-20-20-10-30   → FIS min ≈ -100
-    """
+    """차트 첫인상 점수 계산"""
     records = []
     for idx in range(len(df)):
-        row = df.iloc[idx]
-        t   = score_trend(row)
-        m   = score_momentum(df, idx)
-        s   = score_structure(df, idx)
-        cb  = score_compression(df, idx)
-        vl  = score_volume(row)
-        rp  = score_risk_penalty(df, idx)
+        trend = score_trend(df, idx)
+        momentum = score_momentum(df, idx)
+        structure = score_structure(df, idx)
+        compression = score_compression(df, idx)
+        volume = score_volume(df, idx)
+        risk = score_risk_penalty(df, idx)
 
-        # 직접 합산 (가중치 없음) — 각 레이어 점수 범위가 이미 보정돼 있음
-        raw = t + m + s + cb + vl + rp
-        fis = float(np.clip(raw * 1.2, -100, 100))
+        raw = (1.15 * trend) + momentum + structure + (0.85 * compression) + (0.75 * volume) + risk
+        fis = _clip(raw * 1.05, -100, 100)
 
         records.append({
-            "TrendScore":       t,
-            "MomentumScore":    m,
-            "StructureScore":   s,
-            "CompressionScore": cb,
-            "VolumeScore":      vl,
-            "RiskPenalty":      rp,
-            "FIS":              fis,
+            "TrendScore": trend,
+            "MomentumScore": momentum,
+            "StructureScore": structure,
+            "CompressionScore": compression,
+            "VolumeScore": volume,
+            "RiskPenalty": risk,
+            "FIS": fis,
         })
 
     result = pd.DataFrame(records, index=df.index)
     return pd.concat([df, result], axis=1)
 
 
-# ─────────────────────────────────────────────────────────
-# 한문장 판단 생성
-# ─────────────────────────────────────────────────────────
+def calc_entry_score(df_fis: pd.DataFrame) -> dict:
+    """현재 봉 기준 진입 타이밍 점수 계산 (0~100)."""
+    row = df_fis.iloc[-1]
+    fis = _fnum(row.get("FIS"))
+    trend = _fnum(row.get("TrendScore"))
+    momentum = _fnum(row.get("MomentumScore"))
+    structure = _fnum(row.get("StructureScore"))
+    compression = _fnum(row.get("CompressionScore"))
+    volume_score = _fnum(row.get("VolumeScore"))
+    risk = _fnum(row.get("RiskPenalty"))
+    close = _fnum(row.get("Close"))
+    open_price = _fnum(row.get("Open"), close)
+    ema10 = _fnum(row.get("EMA10"), close)
+    ema20 = _fnum(row.get("EMA20"), close)
+    ema60 = _fnum(row.get("EMA60"), close)
+    atr = _fnum(row.get("ATR14"))
+    adx = _fnum(row.get("ADX14"), 18)
+    rsi = _fnum(row.get("RSI14"), 50)
+    rvol = _fnum(row.get("RVOL"), 1.0)
+    bb_up = _fnum(row.get("BB_UP"), close)
+    bb_dn = _fnum(row.get("BB_DN"), close)
+    kijun = _fnum(row.get("ICH_KIJUN"), ema20)
+    range_low = _fnum(row.get("RangeLow"))
+    range_high = _fnum(row.get("RangeHigh"))
+    close_pos = _fnum(row.get("ClosePos"), 0.5)
+    roc20 = _fnum(row.get("ROC20"))
+
+    gap_atr = (close - ema20) / atr if atr > 0 else 0.0
+    gap_pct = (close - ema20) / ema20 * 100 if ema20 > 0 else 0.0
+    lookback = df_fis.iloc[-8:] if len(df_fis) >= 8 else df_fis
+    recent_high = _fnum(lookback["High"].max(), close)
+    recent_low = _fnum(lookback["Low"].min(), close)
+    pullback_pct = (recent_high - close) / recent_high * 100 if recent_high > 0 else 0.0
+    bounce_pct = (close - recent_low) / recent_low * 100 if recent_low > 0 else 0.0
+    range_pos = _range_pos(close, range_low, range_high)
+    bb_pos = _range_pos(close, bb_dn, bb_up)
+    hist_now = _fnum(row.get("MACD_HIST"))
+    hist_prev = _fnum(df_fis.iloc[-2].get("MACD_HIST")) if len(df_fis) >= 2 else hist_now
+    hist_prev2 = _fnum(df_fis.iloc[-3].get("MACD_HIST")) if len(df_fis) >= 3 else hist_prev
+    hist_rising = hist_now >= hist_prev >= hist_prev2
+    hist_falling = hist_now < hist_prev < hist_prev2
+
+    cloud_top = max(_fnum(row.get("ICH_SENKOU_A"), np.nan), _fnum(row.get("ICH_SENKOU_B"), np.nan))
+    cloud_ok = not np.isnan(cloud_top) and close >= cloud_top
+
+    context = 0.0
+    if fis >= 65:
+        context += 16
+    elif fis >= 45:
+        context += 12
+    elif fis >= 25:
+        context += 8
+    elif fis < 0:
+        context -= 6
+    if trend >= 14:
+        context += 8
+    elif trend >= 7:
+        context += 4
+    elif trend < 0:
+        context -= 5
+    if structure >= 8:
+        context += 5
+    elif structure < 0:
+        context -= 4
+    if adx >= 22:
+        context += 4
+    elif adx < 15:
+        context -= 2
+    if cloud_ok:
+        context += 4
+    if risk >= -6:
+        context += 4
+    elif risk <= -15:
+        context -= 6
+    context = _clip(context, 0, 30)
+
+    pullback_setup = 0.0
+    if -0.4 <= gap_atr <= 1.0:
+        pullback_setup += 10
+    elif 1.0 < gap_atr <= 1.8:
+        pullback_setup += 6
+    elif gap_atr > 2.8 or gap_atr < -1.2:
+        pullback_setup -= 6
+    if 4 <= pullback_pct <= 12:
+        pullback_setup += 9
+    elif 2 <= pullback_pct < 4:
+        pullback_setup += 5
+    elif pullback_pct > 16:
+        pullback_setup -= 5
+    if 43 <= rsi <= 58:
+        pullback_setup += 7
+    elif 38 <= rsi < 43:
+        pullback_setup += 4
+    elif rsi > 72:
+        pullback_setup -= 4
+    if rvol <= 1.05:
+        pullback_setup += 4
+    pullback_setup = _clip(pullback_setup, 0, 30)
+
+    breakout_setup = 0.0
+    if compression >= 8:
+        breakout_setup += 8
+    elif compression >= 4:
+        breakout_setup += 4
+    if 0.78 <= range_pos <= 0.96:
+        breakout_setup += 8
+    elif range_pos > 0.97:
+        breakout_setup -= 4
+    if rvol >= 1.4:
+        breakout_setup += 7
+    elif rvol >= 1.1:
+        breakout_setup += 3
+    if close_pos >= 0.72 and close >= open_price:
+        breakout_setup += 4
+    if hist_rising:
+        breakout_setup += 5
+    breakout_setup = _clip(breakout_setup, 0, 30)
+
+    continuation_setup = 0.0
+    if close >= ema10 >= ema20 >= ema60:
+        continuation_setup += 9
+    elif close >= ema10 >= ema20:
+        continuation_setup += 5
+    if momentum >= 8:
+        continuation_setup += 7
+    elif momentum >= 3:
+        continuation_setup += 4
+    if roc20 >= 8:
+        continuation_setup += 5
+    elif roc20 >= 4:
+        continuation_setup += 3
+    if hist_rising:
+        continuation_setup += 4
+    if rvol >= 1.2 and close_pos >= 0.65:
+        continuation_setup += 5
+    continuation_setup = _clip(continuation_setup, 0, 30)
+
+    reversal_setup = 0.0
+    if rsi <= 35:
+        reversal_setup += 7
+    elif rsi <= 42:
+        reversal_setup += 4
+    if bounce_pct >= 4:
+        reversal_setup += 6
+    elif bounce_pct >= 2:
+        reversal_setup += 3
+    if close >= ema10:
+        reversal_setup += 5
+    if hist_rising and hist_now > 0:
+        reversal_setup += 5
+    elif hist_rising:
+        reversal_setup += 3
+    if close_pos >= 0.65 and rvol >= 1.1:
+        reversal_setup += 4
+    reversal_setup = _clip(reversal_setup, 0, 24)
+
+    setup_scores = {
+        "추세 눌림": pullback_setup,
+        "압축 돌파": breakout_setup,
+        "모멘텀 지속": continuation_setup,
+        "반전 초기": reversal_setup,
+    }
+    setup_name = max(setup_scores, key=setup_scores.get)
+    setup_quality = setup_scores[setup_name]
+
+    trigger = 0.0
+    if close >= ema10:
+        trigger += 5
+    if close >= ema20:
+        trigger += 4
+    if close >= kijun:
+        trigger += 4
+    if close_pos >= 0.62:
+        trigger += 4
+    elif close_pos <= 0.35:
+        trigger -= 4
+    if hist_rising:
+        trigger += 5
+    elif hist_falling:
+        trigger -= 3
+    if rvol >= 1.4 and close >= open_price:
+        trigger += 4
+    elif rvol < 0.75 and setup_name != "추세 눌림":
+        trigger -= 2
+    trigger = _clip(trigger, -6, 24)
+
+    space = 0.0
+    if 0.55 <= range_pos <= 0.9:
+        space += 9
+    elif 0.9 < range_pos <= 0.96:
+        space += 4
+    elif range_pos > 0.97:
+        space -= 6
+    elif range_pos < 0.35:
+        space -= 3
+    if 0.35 <= bb_pos <= 0.82:
+        space += 5
+    elif bb_pos > 0.92:
+        space -= 4
+    if risk >= -4:
+        space += 4
+    elif risk <= -15:
+        space -= 4
+    space = _clip(space, -6, 18)
+
+    risk_control = 0.0
+    if risk >= -4:
+        risk_control += 10
+    elif risk >= -9:
+        risk_control += 6
+    elif risk >= -14:
+        risk_control += 2
+    else:
+        risk_control -= 4
+    if atr > 0 and abs(close - ema20) / atr <= 2.2:
+        risk_control += 4
+    if adx >= 18:
+        risk_control += 3
+    risk_control = _clip(risk_control, 0, 16)
+
+    total = _clip(context + setup_quality + trigger + space + risk_control, 0, 100)
+    if total >= 80:
+        label = "최적 진입 구간"
+    elif total >= 65:
+        label = "양호한 진입 구간"
+    elif total >= 50:
+        label = "조건부 진입 가능"
+    else:
+        label = "진입 대기 구간"
+
+    return {
+        "score": total,
+        "label": label,
+        "setup_name": setup_name,
+        "setup_scores": {k: round(v, 1) for k, v in setup_scores.items()},
+        "components": {
+            "추세문맥": round(context, 1),
+            "진입구조": round(setup_quality, 1),
+            "확인신호": round(trigger, 1),
+            "저항여유": round(space, 1),
+            "리스크관리": round(risk_control, 1),
+        },
+        "metrics": {
+            "ema20_gap_pct": round(gap_pct, 2),
+            "ema20_gap_atr": round(gap_atr, 2),
+            "pullback_pct": round(pullback_pct, 2),
+            "bounce_pct": round(bounce_pct, 2),
+            "range_pos": round(range_pos * 100, 1),
+            "bb_pos": round(bb_pos * 100, 1),
+            "rsi_reset": round(rsi, 1),
+            "adx": round(adx, 1),
+        },
+    }
+
 
 def make_judgment(df_fis: pd.DataFrame) -> dict:
-    """최신 봉 기준으로 판단 dict 반환"""
-    row  = df_fis.iloc[-1]
-    fis  = float(row["FIS"])
-    t    = float(row["TrendScore"])
-    m    = float(row["MomentumScore"])
-    s    = float(row["StructureScore"])
-    cb   = float(row["CompressionScore"])
-    rp   = float(row["RiskPenalty"])
-    rvol = float(row["RVOL"]) if not pd.isna(row["RVOL"]) else 1.0
+    """최신 봉 기준 판단 dict 반환"""
+    row = df_fis.iloc[-1]
+    fis = _fnum(row.get("FIS"))
+    trend = _fnum(row.get("TrendScore"))
+    momentum = _fnum(row.get("MomentumScore"))
+    structure = _fnum(row.get("StructureScore"))
+    compression = _fnum(row.get("CompressionScore"))
+    volume = _fnum(row.get("VolumeScore"))
+    risk = _fnum(row.get("RiskPenalty"))
+    rsi = _fnum(row.get("RSI14"), 50)
+    rvol = _fnum(row.get("RVOL"), 1.0)
+    close = _fnum(row.get("Close"))
 
-    # ── 첫인상 레이블 ──────────────────────────
-    if fis >= 70:
-        label, label_color = "강한 상승형",   "#D32F2F"
-    elif fis >= 40:
-        label, label_color = "우호적 추세형", "#E57373"
-    elif fis >= 10:
-        label, label_color = "중립 관망형",   "#F9A825"
+    if fis >= 65:
+        label, label_color = "강한 상승 우위", "#D32F2F"
+    elif fis >= 30:
+        label, label_color = "상승 우위", "#E57373"
+    elif fis >= 5:
+        label, label_color = "중립 이상", "#F9A825"
     elif fis >= -20:
-        label, label_color = "약세 주의형",   "#64B5F6"
+        label, label_color = "중립 약세", "#64B5F6"
     elif fis >= -50:
-        label, label_color = "하락 압력형",   "#1565C0"
+        label, label_color = "하락 우위", "#1565C0"
     else:
-        label, label_color = "강한 하락형",   "#0D47A1"
+        label, label_color = "강한 하락 우위", "#0D47A1"
 
-    # ── 요약 2줄 (FIS 구간별) ─────────────────
-    if fis >= 40:
-        sl1 = "추세는 살아 있고 눌림 확인이 중요한 구간이다. 신규 진입은 눌림이 지지로 확인될 때만 의미가 있다."
-        sl2 = "보유자는 추세 훼손 전까지 관찰 유지가 가능하다. 중요한 기준선 근처에서 눌림이 잡히면 위치는 나쁘지 않다."
-    elif fis >= 10:
-        sl1 = "나쁘지 않지만 한두 번 더 확인이 필요한 구간이다. 신규 진입은 서두르기보다 조건 확인이 먼저다."
-        sl2 = "보유자는 추세 훼손 전까지 관찰 유지가 가능하다. 중요한 기준선 근처에서 눌림이 잡히면 위치는 나쁘지 않다."
+    if fis >= 30:
+        sl1 = "추세와 구조가 대체로 상승 쪽에 기울어 있다. 다만 지금 매수할지는 별도의 진입 점수로 분리해서 봐야 한다."
+        sl2 = "보유자는 추세 훼손 전까지 우위가 유지된다. 신규 진입은 과열 추격보다 눌림 확인이 더 중요하다."
+    elif fis >= 5:
+        sl1 = "방향성은 완전히 꺾이지 않았지만 확신도는 아직 중간 수준이다. 추가 확인 없이 강하게 베팅할 구간은 아니다."
+        sl2 = "보유자는 기준선 지지 여부를 우선 보되, 신규 진입은 타이밍 점수와 저항 여유를 함께 봐야 한다."
     elif fis >= -20:
-        sl1 = "첫인상만 보고 들어가기에는 근거가 부족한 구간이다. 신규 진입은 보류하고 다음 확인을 기다리는 편이 낫다."
-        sl2 = "보유자는 큰 방향이 다시 정리되는지 확인하는 편이 낫다. 주요 기준선이 흔들리면 방어 관점으로 바꿔야 한다."
+        sl1 = "상승 우위라고 보기엔 근거가 약하다. 방향성이 정리되기 전까지는 관망이 합리적이다."
+        sl2 = "보유자는 방어 우선으로 보고, 신규 진입은 추세 복원 신호가 확인될 때까지 미루는 편이 낫다."
     elif fis >= -50:
-        sl1 = "하락 압력이 강한 구간이다. 신규 진입은 부담이 있으므로 반등 확인 후 재판단이 필요하다."
-        sl2 = "보유자는 추가 하락 시 손절 기준을 재점검해야 한다. 다음 봉에서 반전 신호가 없으면 방어 관점을 유지한다."
+        sl1 = "하락 압력이 우세하다. 단기 반등이 나와도 추세 전환으로 보기엔 이르다."
+        sl2 = "보유자는 손절 기준과 반등 저항 구간을 먼저 점검해야 한다. 공격적 신규 진입은 불리하다."
     else:
-        sl1 = "추세가 완전히 꺾인 구간이다. 매수 접근은 매우 위험하다."
-        sl2 = "보유자는 손절 기준을 재점검하고 방어적 관점을 유지해야 한다."
+        sl1 = "차트 구조가 명확히 약세 쪽으로 기울어 있다. 매수 접근은 확률상 불리하다."
+        sl2 = "보유자는 방어 중심 판단이 우선이다. 추세 전환 신호가 새로 생기기 전까지는 보수적으로 보는 편이 맞다."
 
-    # ── 세부 추가 코멘트 ──────────────────────
-    extra_parts = []
-    if cb >= 10 and rp > -5:
-        extra_parts.append("변동성 수축 후 돌파 가능성을 주시할 구간이다.")
-    elif rp <= -15:
-        extra_parts.append("단기 과열 또는 매물 부담이 크므로 추격보다 조정 대기가 낫다.")
-    if rvol > 2.0:
-        extra_parts.append("거래량이 크게 증가해 방향 확인이 필요하다.")
+    contributors = {
+        "추세": trend,
+        "모멘텀": momentum,
+        "구조": structure,
+        "압축/위치": compression,
+        "거래참여": volume,
+        "위험": risk,
+    }
+    pos_name = max(contributors, key=contributors.get)
+    neg_name = min(contributors, key=contributors.get)
+    extra_parts = [f"가장 강한 강점은 {pos_name}이고, 가장 약한 부분은 {neg_name}이다."]
+    if compression >= 8 and risk > -8:
+        extra_parts.append("과열보다 재정비에 가까운 상태라 돌파 재개 가능성을 볼 수 있다.")
+    if risk <= -15:
+        extra_parts.append("단기 과열이나 매물 부담이 크므로 추격 매수는 불리하다.")
+    if rvol >= 1.8:
+        extra_parts.append("거래량이 늘어 방향 확인의 신뢰도는 다소 높아졌다.")
     extra = " ".join(extra_parts)
 
-    # ── 일목균형표 구름 위치 ──────────────────
-    cloud_a = float(row.get("ICH_SENKOU_A", 0) or 0)
-    cloud_b = float(row.get("ICH_SENKOU_B", 0) or 0)
-    c_price = float(row["Close"])
-    cloud_top = max(cloud_a, cloud_b)
-    cloud_bot = min(cloud_a, cloud_b)
-    if c_price > cloud_top:
-        ichimoku_status = "구름 위 — 매수 우세"
-    elif c_price < cloud_bot:
-        ichimoku_status = "구름 아래 — 매도 우세"
-    else:
-        ichimoku_status = "구름 내부 — 중립"
-
-    # ── RSI 상태 ─────────────────────────────
-    rsi = float(row.get("RSI14", 50) or 50)
+    ichimoku_status, _ = _cloud_status(row)
     if rsi >= 70:
         rsi_status = f"과매수 ({rsi:.1f})"
     elif rsi <= 30:
@@ -327,20 +604,21 @@ def make_judgment(df_fis: pd.DataFrame) -> dict:
         rsi_status = f"중립 ({rsi:.1f})"
 
     return {
-        "fis":             fis,
-        "label":           label,
-        "label_color":     label_color,
-        "summary_l1":      sl1,
-        "summary_l2":      sl2,
-        "extra":           extra,
+        "fis": fis,
+        "label": label,
+        "label_color": label_color,
+        "summary_l1": sl1,
+        "summary_l2": sl2,
+        "extra": extra,
         "ichimoku_status": ichimoku_status,
-        "rsi_status":      rsi_status,
+        "rsi_status": rsi_status,
         "scores": {
-            "추세":    t,
-            "모멘텀":  m,
-            "구조":    s,
-            "압축":    cb,
-            "거래량":  float(row["VolumeScore"]),
-            "위험감점": rp,
+            "추세": trend,
+            "모멘텀": momentum,
+            "구조": structure,
+            "압축": compression,
+            "거래량": volume,
+            "위험감점": risk,
         },
+        "price": close,
     }

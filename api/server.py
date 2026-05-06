@@ -4,8 +4,17 @@ import os
 import traceback
 from flask import Flask, request, jsonify, send_from_directory
 
-from engine.data      import fetch, calc_indicators, get_info, search_ticker, fetch_market_index
-from engine.fis       import calc_fis, make_judgment
+from engine.data      import (
+    fetch,
+    calc_indicators,
+    get_info,
+    search_ticker,
+    fetch_market_index,
+    normalize_timeframe,
+    resolve_fetch_period,
+    resample_ohlcv,
+)
+from engine.fis       import calc_fis, make_judgment, calc_entry_score
 from engine.chart     import render_main_chart, render_mini_chart
 from engine.market    import get_market_summary
 from engine.scanner   import scan_market, _calc_entry_score
@@ -16,6 +25,73 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 TMPL_DIR   = os.path.join(BASE_DIR, "templates")
 
 app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TMPL_DIR)
+
+
+def _signal_snapshot(ticker: str, period: str = "1y", timeframe: str = "daily") -> dict:
+    fetch_period = resolve_fetch_period(period, timeframe)
+    raw_df = fetch(ticker, fetch_period)
+    price_df = resample_ohlcv(raw_df, timeframe)
+    ind_df = calc_indicators(price_df, timeframe)
+    fis_df = calc_fis(ind_df)
+    judgment = make_judgment(fis_df)
+    entry = calc_entry_score(fis_df)
+    row = fis_df.iloc[-1]
+    return {
+        "fis": float(row.get("FIS") or 0),
+        "entry_score": float(entry["score"]),
+        "risk": float(row.get("RiskPenalty") or 0),
+        "trend": float(row.get("TrendScore") or 0),
+        "label": judgment["label"],
+        "summary_l1": judgment["summary_l1"],
+        "setup_name": entry.get("setup_name", "일반"),
+    }
+
+
+def _portfolio_analysis(enriched: list) -> dict | None:
+    analyzable = [p for p in enriched if p.get("fis") is not None]
+    if not analyzable:
+        return None
+
+    total_value = sum(max(p["value"], 0) for p in analyzable) or 1.0
+    weights = [p["value"] / total_value for p in analyzable]
+    weighted_fis = sum(p["fis"] * w for p, w in zip(analyzable, weights))
+    weighted_entry = sum(p["entry_score"] * w for p, w in zip(analyzable, weights))
+    weighted_risk = sum(p["risk"] * w for p, w in zip(analyzable, weights))
+
+    concentration = sum(w * w for w in weights)
+    if len(weights) > 1:
+        diversification = max(0.0, min(100.0, ((1 - concentration) / (1 - 1 / len(weights))) * 100))
+    else:
+        diversification = 0.0
+
+    strongest = max(analyzable, key=lambda item: item["fis"] + item["entry_score"] * 0.5)
+    weakest = min(analyzable, key=lambda item: item["fis"] + item["entry_score"] * 0.35 + item["risk"])
+
+    if weighted_fis >= 45 and weighted_entry >= 65:
+        label, label_color = "공격 유지 가능", "#D32F2F"
+        summary_l1 = "보유 포트폴리오의 차트 우위가 전반적으로 살아 있고, 추가 매수 타이밍도 평균 이상이다."
+        summary_l2 = "다만 집중도가 높다면 가장 강한 종목 위주로만 추가하고, 약한 종목 비중은 재점검하는 편이 낫다."
+    elif weighted_fis >= 20:
+        label, label_color = "선별 대응 구간", "#F9A825"
+        summary_l1 = "포트폴리오 전체 방향은 아직 무너지지 않았지만, 종목별 강도 차이가 커서 선별 대응이 필요하다."
+        summary_l2 = "강한 종목은 유지 가능하지만, 약한 종목은 비중 축소나 교체 검토가 필요하다."
+    else:
+        label, label_color = "방어 우선 구간", "#1565C0"
+        summary_l1 = "포트폴리오 전체 우위가 약해졌다. 신규 추가 매수보다 방어와 정리가 우선이다."
+        summary_l2 = "가장 약한 종목부터 정리 기준을 세우고, 진입 점수가 높은 종목만 제한적으로 보는 편이 낫다."
+
+    return {
+        "weighted_fis": round(weighted_fis, 1),
+        "weighted_entry_score": round(weighted_entry, 1),
+        "weighted_risk": round(weighted_risk, 1),
+        "diversification_score": round(diversification, 1),
+        "label": label,
+        "label_color": label_color,
+        "summary_l1": summary_l1,
+        "summary_l2": summary_l2,
+        "strongest_name": strongest["name"],
+        "weakest_name": weakest["name"],
+    }
 
 
 # ── 페이지 라우트 ─────────────────────────────────────────
@@ -69,13 +145,16 @@ def api_search():
 @app.route("/api/analyze/<ticker>")
 def api_analyze(ticker: str):
     period = request.args.get("period", "2y")
+    timeframe = normalize_timeframe(request.args.get("timeframe", "daily"))
     bars   = int(request.args.get("bars", 220))
     try:
-        raw_df    = fetch(ticker, period)
-        ind_df    = calc_indicators(raw_df)
+        fetch_period = resolve_fetch_period(period, timeframe)
+        raw_df    = fetch(ticker, fetch_period)
+        price_df  = resample_ohlcv(raw_df, timeframe)
+        ind_df    = calc_indicators(price_df, timeframe)
         fis_df    = calc_fis(ind_df)
         judgment  = make_judgment(fis_df)
-        chart_b64 = render_main_chart(fis_df, judgment, ticker, bars)
+        chart_b64 = render_main_chart(fis_df, judgment, ticker, bars, timeframe)
 
         recent = fis_df.iloc[-30:].copy()
         recent.index = recent.index.strftime("%Y-%m-%d")
@@ -89,26 +168,29 @@ def api_analyze(ticker: str):
         last = fis_df.iloc[-1]
 
         # ── 진입 타이밍 점수 ──────────────────────────────────
-        entry_score = _calc_entry_score(fis_df)
+        entry = calc_entry_score(fis_df)
 
         # ── 추가 지표 계산 ────────────────────────────────────
-        c     = float(last["Close"])
-        ema20 = float(last.get("EMA20") or 0)
-        ema20_gap_pct = round((c - ema20) / ema20 * 100, 2) if ema20 > 0 else 0.0
+        c = float(last["Close"])
+        metrics = entry["metrics"]
+        ema20_gap_pct = float(metrics.get("ema20_gap_pct", 0.0))
+        ema20_gap_atr = float(metrics.get("ema20_gap_atr", 0.0))
+        bb_pos = float(metrics.get("bb_pos", 50.0))
+        pos52 = float(metrics.get("range_pos", 50.0))
+        pullback_5d = float(metrics.get("pullback_pct", 0.0))
 
-        bb_up = float(last.get("BB_UP") or 0)
-        bb_dn = float(last.get("BB_DN") or 0)
-        bb_pos = round((c - bb_dn) / (bb_up - bb_dn) * 100, 1) if (bb_up - bb_dn) > 0 else 50.0
-
-        h52 = float(last.get("High52") or 0)
-        l52 = float(last.get("Low52")  or 0)
-        pos52 = round((c - l52) / (h52 - l52) * 100, 1) if (h52 - l52) > 0 else 50.0
-
-        pullback_5d = 0.0
-        if len(fis_df) >= 6:
-            recent_high = float(fis_df.iloc[-6:-1]["High"].max())
-            if recent_high > 0:
-                pullback_5d = round((recent_high - c) / recent_high * 100, 2)
+        timeframe_label_map = {
+            "daily": "일봉",
+            "weekly": "주봉",
+            "monthly": "월봉",
+            "yearly": "년봉",
+        }
+        range_label_map = {
+            "daily": "52주 위치",
+            "weekly": "2년 위치",
+            "monthly": "5년 위치",
+            "yearly": "장기 위치",
+        }
 
         prev_close = float(fis_df.iloc[-2]["Close"]) if len(fis_df) >= 2 else c
         day_change_pct = round((c - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
@@ -117,7 +199,11 @@ def api_analyze(ticker: str):
         return jsonify({
             "ok": True, "ticker": ticker, "info": info,
             "judgment": judgment, "chart": chart_b64, "table": table,
-            "entry_score": round(entry_score, 1),
+            "entry_score": round(entry["score"], 1),
+            "entry": entry,
+            "timeframe": timeframe,
+            "timeframe_label": timeframe_label_map.get(timeframe, "일봉"),
+            "range_label": range_label_map.get(timeframe, "장기 위치"),
             "latest": {
                 "close":         c,
                 "fis":           float(last["FIS"]),
@@ -125,6 +211,7 @@ def api_analyze(ticker: str):
                 "rvol":          float(last.get("RVOL")  or 1),
                 "atr":           float(last.get("ATR14") or 0),
                 "ema20_gap_pct": ema20_gap_pct,
+                "ema20_gap_atr": ema20_gap_atr,
                 "bb_pos":        bb_pos,
                 "pos52":         pos52,
                 "pullback_5d":   pullback_5d,
@@ -183,6 +270,18 @@ def api_portfolio():
                 chg   = idx.get("change_pct") or 0
             except Exception:
                 cur, chg = pos["avg_price"], 0
+            try:
+                signal = _signal_snapshot(ticker)
+            except Exception:
+                signal = {
+                    "fis": None,
+                    "entry_score": None,
+                    "risk": None,
+                    "trend": None,
+                    "label": "분석 실패",
+                    "summary_l1": "현재 차트 분석 데이터를 불러오지 못했습니다.",
+                    "setup_name": "정보 부족",
+                }
             qty     = pos["quantity"]
             avg     = pos["avg_price"]
             value   = round(cur * qty, 2)
@@ -200,6 +299,13 @@ def api_portfolio():
                 "cost":          cost,
                 "profit":        profit,
                 "profit_pct":    pct,
+                "fis":           signal["fis"],
+                "entry_score":   signal["entry_score"],
+                "risk":          signal["risk"],
+                "trend":         signal["trend"],
+                "signal_label":  signal["label"],
+                "signal_summary": signal["summary_l1"],
+                "setup_name":    signal["setup_name"],
             })
         total_cost   = round(sum(p["cost"]   for p in enriched), 2)
         total_value  = round(sum(p["value"]  for p in enriched), 2)
@@ -213,7 +319,8 @@ def api_portfolio():
                 "total_value":  total_value,
                 "total_profit": total_profit,
                 "total_pct":    total_pct,
-            }
+            },
+            "analysis": _portfolio_analysis(enriched),
         })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
