@@ -57,6 +57,27 @@ function fisLabel(fis) {
   return "강한 하락형";
 }
 
+// ── RSI / RVOL 상태 텍스트 ──────────────────────────────
+function rsiStatus(rsi) {
+  if (rsi >= 70) return "과매수";
+  if (rsi >= 60) return "상승 강세";
+  if (rsi >= 40) return "중립";
+  if (rsi >= 30) return "하락 약세";
+  return "과매도";
+}
+function rsiColor(rsi) {
+  if (rsi >= 70) return "var(--bear)";
+  if (rsi >= 60) return "var(--bull)";
+  if (rsi <= 30) return "var(--bull)";
+  return "var(--text2)";
+}
+function rvolStatus(rvol) {
+  if (rvol >= 2.0) return "폭발적 거래량";
+  if (rvol >= 1.5) return "강한 거래량";
+  if (rvol >= 0.8) return "보통";
+  return "거래 부진";
+}
+
 // ── 종목 분석 이동 ────────────────────────────────────
 function goAnalyze(ticker) {
   window.location.href = `/analyze?ticker=${encodeURIComponent(ticker)}`;

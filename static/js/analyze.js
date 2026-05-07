@@ -1,7 +1,13 @@
 ﻿/* static/js/analyze.js */
 
 const COL_LABELS = {
-  function renderEntryScore(entry, l, rangeLabel) {
+  Date: "날짜", Open: "시가", High: "고가", Low: "저가", Close: "종가",
+  Volume: "거래량", EMA20: "EMA20", EMA60: "EMA60", RSI14: "RSI(14)",
+  MACD: "MACD", FIS: "FIS", ICH_TENKAN: "전환선", ICH_KIJUN: "기준선",
+  ICH_SENKOU_A: "선행A", ICH_SENKOU_B: "선행B",
+};
+
+function renderEntryScore(entry, l, rangeLabel) {
     const score = entry?.score ?? 0;
     const components = entry?.components || {};
     const setupName = entry?.setup_name || "일반";
@@ -166,115 +172,6 @@ const COL_LABELS = {
         <div style="font-size:10px;color:var(--text3);margin-top:2px">이상적: 20 이상 (추세 지속력)</div>
       </div>`;
   }
-  const emaCol    = emaGood ? "#2ea043" : Math.abs(ema20GapPct) > 12 ? "#e53935" : "#d29922";
-  const emaSign   = ema20GapPct >= 0 ? "+" : "";
-
-  // BB 위치: sweet 35~75%
-  const bbGood = bbPos >= 35 && bbPos <= 75;
-  const bbCol  = bbGood ? "#2ea043" : bbPos > 85 ? "#e53935" : "#d29922";
-
-  // 장기 위치: sweet 55~88%
-  const p52Good = pos52 >= 55 && pos52 <= 88;
-  const p52Col  = p52Good ? "#2ea043" : pos52 > 95 ? "#e53935" : "#d29922";
-
-  // 최근 조정폭: sweet 4~12%
-  const pbGood = pb5d >= 4 && pb5d <= 12;
-  const pbCol  = pbGood ? "#2ea043" : pb5d > 15 ? "#e53935" : "#d29922";
-  const pb5Bar = Math.min(100, pb5d / 20 * 100);
-
-  const atrGapCol = ema20GapAtr >= -0.5 && ema20GapAtr <= 1.2 ? "#2ea043" : Math.abs(ema20GapAtr) > 3 ? "#e53935" : "#d29922";
-  const rsiCol = rsiReset >= 45 && rsiReset <= 60 ? "#2ea043" : rsiReset > 72 || rsiReset < 30 ? "#e53935" : "#d29922";
-
-  const compColor = (value, goodCut) => value >= goodCut ? "#2ea043" : value < 0 ? "#e53935" : "#d29922";
-
-  document.getElementById("entryMetrics").innerHTML = `
-    <div class="em-item">
-      <div class="em-header">
-        <span class="em-label">추세 문맥</span>
-        <span class="em-value" style="color:${compColor(trendCtx, 16)}">${trendCtx.toFixed(1)}</span>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">상승 우위 추세가 유지되는지 평가</div>
-    </div>
-    <div class="em-item">
-      <div class="em-header">
-        <span class="em-label">눌림 품질</span>
-        <span class="em-value" style="color:${compColor(pullback, 18)}">${pullback.toFixed(1)}</span>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">과열 해소와 RSI 리셋 상태</div>
-    </div>
-    <div class="em-item">
-      <div class="em-header">
-        <span class="em-label">확인 신호</span>
-        <span class="em-value" style="color:${compColor(confirm, 14)}">${confirm.toFixed(1)}</span>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">재상승 재개 여부와 종가 위치</div>
-    </div>
-    <div class="em-item">
-      <div class="em-header">
-        <span class="em-label">저항 여유</span>
-        <span class="em-value" style="color:${compColor(space, 10)}">${space.toFixed(1)}</span>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">상단 저항과 과열 부담 정도</div>
-    </div>
-    <div class="em-item">
-      <div class="em-header">
-        <span class="em-label">EMA20 이격률</span>
-        <span class="em-value" style="color:${emaCol}">${emaSign}${ema20GapPct.toFixed(1)}%</span>
-      </div>
-      <div class="em-bar-track">
-        <div class="sweet" style="left:${(15/30)*100}%;width:${(8/30)*100}%;background:rgba(46,160,67,0.15)"></div>
-        <div class="em-bar-fill" style="width:${emaBarPct}%;background:${emaCol}"></div>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">이상적: -1~+4% (EMA 근접 눌림)</div>
-    </div>
-    <div class="em-item">
-      <div class="em-header">
-        <span class="em-label">EMA20 ATR 이격</span>
-        <span class="em-value" style="color:${atrGapCol}">${ema20GapAtr >= 0 ? "+" : ""}${ema20GapAtr.toFixed(2)} ATR</span>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">이상적: -0.5 ~ +1.2 ATR</div>
-    </div>
-    <div class="em-item">
-      <div class="em-header">
-        <span class="em-label">BB 위치</span>
-        <span class="em-value" style="color:${bbCol}">${bbPos.toFixed(0)}%</span>
-      </div>
-      <div class="em-bar-track">
-        <div class="sweet" style="left:30%;width:30%;background:rgba(46,160,67,0.15)"></div>
-        <div class="em-bar-fill" style="width:${bbPos}%;background:${bbCol}"></div>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">이상적: 35~75% (과열 아닌 재상승권)</div>
-    </div>
-    <div class="em-item">
-      <div class="em-header">
-        <span class="em-label">${rangeLabel || "장기 위치"}</span>
-        <span class="em-value" style="color:${p52Col}">${pos52.toFixed(0)}%</span>
-      </div>
-      <div class="em-bar-track">
-        <div class="sweet" style="left:55%;width:33%;background:rgba(46,160,67,0.15)"></div>
-        <div class="em-bar-fill" style="width:${pos52}%;background:${p52Col}"></div>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">이상적: 55~88% (추세권, 상단 여유)</div>
-    </div>
-    <div class="em-item">
-      <div class="em-header">
-        <span class="em-label">최근 조정폭</span>
-        <span class="em-value" style="color:${pbCol}">${pb5d.toFixed(1)}%</span>
-      </div>
-      <div class="em-bar-track">
-        <div class="sweet" style="left:20%;width:40%;background:rgba(46,160,67,0.15)"></div>
-        <div class="em-bar-fill" style="width:${pb5Bar}%;background:${pbCol}"></div>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">이상적: 4~12% (건강한 눌림)</div>
-    </div>
-    <div class="em-item">
-      <div class="em-header">
-        <span class="em-label">RSI 리셋</span>
-        <span class="em-value" style="color:${rsiCol}">${rsiReset.toFixed(1)}</span>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">이상적: 45~60 (과열 해소 후 재가속 준비)</div>
-    </div>`;
-}
 
 // ── 지표 칩 렌더 ────────────────────────────────────────────
 function renderChips(j, l) {
@@ -412,6 +309,136 @@ async function submitSell(qty) {
   closeTradeModal();
   if (res.ok) showToast(res.sold_all ? `${_currentTicker} 전량 매도 완료` : `${_currentTicker} ${qty}주 매도 완료`);
   else        showToast("오류: " + res.error, "error");
+}
+
+// ── 전역 상태 ────────────────────────────────────────────
+let _currentTicker = null;
+let _currentName   = "";
+let _currentPrice  = 0;
+
+// ── URL 파라미터 ─────────────────────────────────────────
+function getTickerFromURL() {
+  return new URLSearchParams(window.location.search).get("ticker");
+}
+
+// ── 토스트 알림 ───────────────────────────────────────────
+function showToast(msg, type = "success") {
+  const el = document.getElementById("toast");
+  if (!el) return;
+  el.textContent = msg;
+  el.style.background = type === "error" ? "#c62828" : "#2ea043";
+  el.style.display = "block";
+  el.style.opacity = "1";
+  setTimeout(() => {
+    el.style.opacity = "0";
+    setTimeout(() => { el.style.display = "none"; }, 400);
+  }, 3000);
+}
+
+// ── 종목 차트 분석 ────────────────────────────────────────
+async function loadAnalysis(ticker) {
+  _currentTicker = ticker.toUpperCase();
+  document.getElementById("loadingOverlay").style.display = "flex";
+  document.getElementById("analyzeMain").style.display    = "none";
+
+  const period    = document.getElementById("periodSelect")?.value    || "2y";
+  const timeframe = document.getElementById("timeframeSelect")?.value || "daily";
+
+  try {
+    const res = await fetch(
+      `/api/analyze/${encodeURIComponent(_currentTicker)}?period=${encodeURIComponent(period)}&timeframe=${encodeURIComponent(timeframe)}&bars=220`
+    );
+    const d = await res.json();
+    if (!d.ok) { alert("분석 오류: " + (d.error || "")); hideLoading(); return; }
+
+    const j = d.judgment;
+    const l = d.latest;
+
+    _currentName  = d.info?.name || _currentTicker;
+    _currentPrice = l.close;
+
+    // 종목 헤더
+    document.getElementById("stockName").textContent     = _currentName;
+    document.getElementById("stockTicker").textContent   = _currentTicker;
+    document.getElementById("stockExchange").textContent = d.info?.exchange || "";
+    document.getElementById("stockMeta").textContent     =
+      [d.info?.sector, d.info?.industry].filter(Boolean).join(" · ");
+
+    const sign   = l.day_change_pct >= 0 ? "+" : "";
+    const chgCol = l.day_change_pct >= 0 ? "var(--bull)" : "var(--bear)";
+    document.getElementById("stockPrice").textContent    = fmt(l.close);
+    document.getElementById("stockCurrency").textContent = d.info?.currency || "";
+    document.getElementById("stockDayChg").textContent   =
+      `${sign}${fmt(l.day_change_abs)} (${sign}${(l.day_change_pct ?? 0).toFixed(2)}%)`;
+    document.getElementById("stockDayChg").style.color   = chgCol;
+
+    // FIS 배지
+    const fCol  = fisColor(l.fis);
+    const fBadge = document.getElementById("fisBadge");
+    fBadge.textContent      = `FIS ${l.fis >= 0 ? "+" : ""}${l.fis.toFixed(1)}`;
+    fBadge.style.background = fCol;
+    const lChip = document.getElementById("labelChip");
+    lChip.textContent = j.label;
+    lChip.style.color = fCol;
+
+    // 판단 텍스트
+    document.getElementById("judgeL1").textContent    = j.summary_l1;
+    document.getElementById("judgeL2").textContent    = j.summary_l2 || "";
+    document.getElementById("judgeExtra").textContent =
+      `${d.timeframe_label || "일봉"} 기준 · ${d.range_label || "장기 위치"} ${(l.pos52 ?? 0).toFixed(0)}%`;
+
+    // 점수 바
+    const scoreItems = [
+      { label: "추세",     value: j.trend,       max: 30 },
+      { label: "모멘텀",   value: j.momentum,    max: 20 },
+      { label: "구조",     value: j.structure,   max: 15 },
+      { label: "압축",     value: j.compression, max: 10 },
+      { label: "거래량",   value: j.volume,      max: 15 },
+      { label: "위험 감점", value: j.risk,       max: 0  },
+    ];
+    document.getElementById("scoreBars").innerHTML = scoreItems.map(b => {
+      const isRisk = b.label === "위험 감점";
+      const pct = b.max > 0
+        ? Math.min(100, Math.max(0, (b.value / b.max) * 100))
+        : Math.min(100, Math.abs(b.value ?? 0) * 3);
+      const col = isRisk
+        ? ((b.value ?? 0) < -12 ? "var(--bear)" : "var(--text2)")
+        : ((b.value ?? 0) >= 0 ? "var(--bull)" : "var(--bear)");
+      return `<div class="sb-row">
+        <span class="sb-label">${b.label}</span>
+        <div class="sb-track"><div class="sb-fill" style="width:${pct}%;background:${col}"></div></div>
+        <span class="sb-val" style="color:${col}">${(b.value ?? 0) >= 0 ? "+" : ""}${(b.value ?? 0).toFixed(1)}</span>
+      </div>`;
+    }).join("");
+
+    // 진입 점수
+    renderEntryScore(d.entry, l, d.range_label);
+
+    // 차트
+    document.getElementById("mainChart").src = "data:image/png;base64," + d.chart;
+
+    // 지표 칩
+    renderChips(j, l);
+
+    // 테이블
+    buildTable(d.table);
+
+    // 보유 중 배지 (비동기 — 분석 렌더링 차단하지 않음)
+    fetch("/api/portfolio").then(r => r.json()).then(pf => {
+      const held = pf.ok && pf.positions?.some(p => p.ticker === _currentTicker);
+      document.getElementById("holdingBadge").style.display = held ? "inline-block" : "none";
+    }).catch(() => {});
+
+    hideLoading();
+    document.getElementById("analyzeMain").style.display = "block";
+  } catch (e) {
+    alert("분석 실패: " + e.message);
+    hideLoading();
+  }
+}
+
+function reloadChart() {
+  if (_currentTicker) loadAnalysis(_currentTicker);
 }
 
 document.addEventListener("DOMContentLoaded", () => {

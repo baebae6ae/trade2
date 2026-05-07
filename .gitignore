@@ -13,4 +13,5 @@ venv/
 portfolio.json
 .DS_Store
 Thumbs.db
+*.tmp
 cfie_output.png
