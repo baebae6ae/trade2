@@ -96,16 +96,40 @@ function renderMpTable(positions) {
     const sign = p.profit >= 0 ? "+" : "";
     const dSign = p.day_change_pct >= 0 ? "+" : "";
     const dCls  = p.day_change_pct >= 0 ? "var(--bull)" : "var(--bear)";
+
+    // 손절/익절 정보
+    const stopNear = p.stop_price && p.current_price <= p.stop_price * 1.03;
+    const stopRow = p.stop_price ? `
+      <div class="mp-risk-row${stopNear ? " mp-stop-near" : ""}">
+        <span class="mp-risk-label">손절</span>
+        <span class="mp-risk-value">${fmt(p.stop_price)}</span>
+        <span class="mp-risk-pct">${pctFrom(p.stop_price, p.avg_price)}</span>
+        ${stopNear ? '<span class="mp-warn-badge">⚠ 근접</span>' : ''}
+      </div>` : '';
+    const t1Row = p.target1 ? `
+      <div class="mp-risk-row mp-target1-row">
+        <span class="mp-risk-label">1차 목표</span>
+        <span class="mp-risk-value">${fmt(p.target1)}</span>
+        <span class="mp-risk-pct">${pctFrom(p.target1, p.avg_price)}</span>
+      </div>` : '';
+    const t2Row = p.target2 ? `
+      <div class="mp-risk-row mp-target2-row">
+        <span class="mp-risk-label">2차 목표</span>
+        <span class="mp-risk-value">${fmt(p.target2)}</span>
+        <span class="mp-risk-pct">${pctFrom(p.target2, p.avg_price)}</span>
+      </div>` : '';
+
     return `
       <tr>
         <td>
           <div class="mp-name">${p.name}</div>
-          <div class="mp-ticker">${p.ticker}</div>
+          <div class="mp-ticker">${p.ticker}${p.setup_name ? ` · <span class="mp-setup-chip">${p.setup_name}</span>` : ''}</div>
           <div class="mp-signal-row">
             <span class="mp-signal" style="background:${fisColor(p.fis || 0)}22;color:${fisColor(p.fis || 0)};border-color:${fisColor(p.fis || 0)}55">FIS ${(p.fis || 0) >= 0 ? "+" : ""}${(p.fis || 0).toFixed(0)}</span>
             <span class="mp-signal" style="background:${entryColor(p.entry_score || 0)}22;color:${entryColor(p.entry_score || 0)};border-color:${entryColor(p.entry_score || 0)}55">진입 점수 ${(p.entry_score || 0).toFixed(0)}</span>
             <span class="mp-signal mp-signal-risk">위험 ${(p.risk || 0).toFixed(0)}</span>
           </div>
+          ${stopRow}${t1Row}${t2Row}
         </td>
         <td>${p.quantity.toLocaleString("ko-KR")}주</td>
         <td>${fmt(p.avg_price)}</td>
@@ -145,6 +169,12 @@ function renderMpTable(positions) {
         </table>
       </div>
     </div>`;
+}
+
+function pctFrom(target, base) {
+  if (!base) return "";
+  const p = (target - base) / base * 100;
+  return (p >= 0 ? "+" : "") + p.toFixed(1) + "%";
 }
 
 function renderMpEmpty() {

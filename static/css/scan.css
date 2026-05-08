@@ -250,3 +250,55 @@
   font-size: 12px; color: var(--text3); line-height: 1.5;
   padding-left: 12px;
 }
+
+
+/* ── 스캔 매수 모달 위험관리 ────────────────────────────── */
+.modal-box-wide { max-width: 520px; }
+.modal-scenario-chip {
+  background: #1a472a; color: #56d364;
+  border: 1px solid #2ea043; border-radius: 20px;
+  padding: 3px 12px; font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.mbuy-qty-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border2);
+}
+.mbuy-qty-label { font-size: 13px; color: var(--text2); min-width: 60px; }
+.mbuy-qty-input { width: 90px; padding: 6px 10px; border-radius: 6px;
+  border: 1px solid var(--border2); background: var(--bg3); color: var(--text1);
+  font-size: 15px; font-weight: 700; text-align: right; }
+.mbuy-invest { font-size: 13px; color: var(--text2); margin-left: auto; }
+.mbuy-price-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border2);
+}
+.mbuy-price-label { font-size: 13px; color: var(--text2); min-width: 60px; }
+.mbuy-price-input { width: 120px; padding: 6px 10px; border-radius: 6px;
+  border: 1px solid var(--border2); background: var(--bg3); color: var(--text1);
+  font-size: 15px; font-weight: 700; text-align: right; }
+.mbuy-price-sub { font-size: 11px; color: var(--text3); margin-left: auto; }
+.mbuy-risk-section { margin-top: 12px; }
+.mbuy-risk-title { font-size: 12px; color: var(--text3); margin-bottom: 8px; }
+.mbuy-risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mbuy-risk-card {
+  border-radius: 8px; padding: 10px 12px;
+  border: 1px solid var(--border2); background: var(--bg2);
+}
+.mbuy-stop   { border-color: #c6282855; background: #c6282810; }
+.mbuy-r1r    { border-color: var(--border2); }
+.mbuy-t1     { border-color: #2ea04355; background: #2ea04310; }
+.mbuy-t2     { border-color: #56d36455; background: #56d36410; }
+.mbuy-risk-card-label { font-size: 11px; color: var(--text3); margin-bottom: 2px; }
+.mbuy-risk-card-value { font-size: 16px; font-weight: 800; color: var(--text1); }
+.mbuy-risk-card-sub   { font-size: 12px; color: var(--text2); margin-top: 1px; }
+.mbuy-risk-card-note  { font-size: 10px; color: var(--text3); margin-top: 4px; }
+.mbuy-tag {
+  display: inline-block; background: var(--bg3);
+  color: var(--text2); border-radius: 4px;
+  padding: 1px 5px; font-size: 10px; margin-left: 4px;
+}
+.mbuy-stop-edit {
+  width: 100%; margin-top: 6px; padding: 4px 8px;
+  border-radius: 5px; border: 1px solid #c6282866;
+  background: var(--bg3); color: var(--text1); font-size: 12px;
+}

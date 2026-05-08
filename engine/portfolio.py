@@ -27,7 +27,10 @@ def get_positions() -> dict:
     return _load().get("positions", {})
 
 
-def buy(ticker: str, name: str, qty: int, price: float) -> dict:
+def buy(ticker: str, name: str, qty: int, price: float,
+        stop_price: float = None, target1: float = None,
+        target2: float = None, setup_name: str = "",
+        entry_atr: float = None) -> dict:
     """신규 진입 또는 추가 매수. 평단가 가중평균 재계산."""
     if qty <= 0:
         raise ValueError("수량은 1 이상이어야 합니다.")
@@ -46,11 +49,17 @@ def buy(ticker: str, name: str, qty: int, price: float) -> dict:
             "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "qty": qty, "price": price,
         })
+        # 리스크 관리 정보는 신규 진입 시에만 덮어쓰고 추가매수 시엔 유지
     else:
         pos[ticker] = {
-            "name":      name,
-            "quantity":  qty,
-            "avg_price": price,
+            "name":       name,
+            "quantity":   qty,
+            "avg_price":  price,
+            "stop_price": round(stop_price, 4) if stop_price else None,
+            "target1":    round(target1, 4)    if target1    else None,
+            "target2":    round(target2, 4)    if target2    else None,
+            "setup_name": setup_name,
+            "entry_atr":  round(entry_atr, 4)  if entry_atr  else None,
             "buys": [{
                 "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "qty": qty, "price": price,

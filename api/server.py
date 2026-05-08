@@ -331,14 +331,26 @@ def api_portfolio():
 @app.route("/api/portfolio/buy", methods=["POST"])
 def api_buy():
     body = request.get_json(silent=True) or {}
-    ticker = body.get("ticker", "").strip().upper()
-    name   = body.get("name", ticker)
-    qty    = int(body.get("qty", 0))
-    price  = float(body.get("price", 0))
+    ticker     = body.get("ticker", "").strip().upper()
+    name       = body.get("name", ticker)
+    qty        = int(body.get("qty", 0))
+    price      = float(body.get("price", 0))
+    stop_price = body.get("stop_price")
+    target1    = body.get("target1")
+    target2    = body.get("target2")
+    setup_name = body.get("setup_name", "")
+    entry_atr  = body.get("entry_atr")
     if not ticker:
         return jsonify({"ok": False, "error": "ticker 필요"}), 400
     try:
-        result = port_buy(ticker, name, qty, price)
+        result = port_buy(
+            ticker, name, qty, price,
+            stop_price=float(stop_price) if stop_price else None,
+            target1=float(target1)       if target1    else None,
+            target2=float(target2)       if target2    else None,
+            setup_name=setup_name,
+            entry_atr=float(entry_atr)   if entry_atr  else None,
+        )
         return jsonify({"ok": True, "position": result})
     except ValueError as e:
         return jsonify({"ok": False, "error": str(e)}), 400
