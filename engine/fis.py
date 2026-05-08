@@ -440,8 +440,20 @@ def calc_entry_score(df_fis: pd.DataFrame) -> dict:
         "모멘텀 지속": continuation_setup,
         "반전 초기": reversal_setup,
     }
-    setup_name = max(setup_scores, key=setup_scores.get)
-    setup_quality = setup_scores[setup_name]
+    _sorted_setups = sorted(setup_scores.items(), key=lambda x: x[1], reverse=True)
+    setup_name  = _sorted_setups[0][0]
+    _primary    = _sorted_setups[0][1]
+    _secondary  = _sorted_setups[1][1]
+    # 2위 시나리오가 강할수록 가산점 (동시 다중 조건 정렬 보상)
+    if _secondary >= 20:
+        _consensus = (_secondary - 10) * 0.30
+    elif _secondary >= 14:
+        _consensus = (_secondary - 10) * 0.12
+    else:
+        _consensus = 0.0
+    setup_quality = _clip(_primary + _consensus, 0, 30)
+    # 2위 이름 (점수 18 이상일 때만 표시용으로 보존)
+    setup_name2 = _sorted_setups[1][0] if _secondary >= 18 else ""
 
     trigger = 0.0
     if close >= ema10:
@@ -498,7 +510,9 @@ def calc_entry_score(df_fis: pd.DataFrame) -> dict:
         risk_control += 3
     risk_control = _clip(risk_control, 0, 16)
 
-    total = _clip(context + setup_quality + trigger + space + risk_control, 0, 100)
+    # 이론적 최대합 118 기준으로 정규화 → 100 = 완벽한 셋업, 평범한 강세 ≈ 80~90
+    _raw = context + setup_quality + trigger + space + risk_control
+    total = _clip(round(_raw / 1.18), 0, 100)
     if total >= 80:
         label = "최적 진입 구간"
     elif total >= 65:
@@ -512,6 +526,7 @@ def calc_entry_score(df_fis: pd.DataFrame) -> dict:
         "score": total,
         "label": label,
         "setup_name": setup_name,
+        "setup_name2": setup_name2,
         "setup_scores": {k: round(v, 1) for k, v in setup_scores.items()},
         "components": {
             "추세문맥": round(context, 1),

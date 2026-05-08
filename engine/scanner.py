@@ -6,9 +6,6 @@ from engine.data import fetch, calc_indicators
 from engine.fis  import calc_fis, make_judgment, calc_entry_score
 
 
-def _calc_entry_score(df_fis) -> float:
-    return float(calc_entry_score(df_fis)["score"])
-
 KOSPI = [
     ("005930.KS","삼성전자"),("000660.KS","SK하이닉스"),("005380.KS","현대차"),
     ("005490.KS","POSCO홀딩스"),("035420.KS","NAVER"),("000270.KS","기아"),
@@ -56,21 +53,31 @@ def _analyze_one(ticker_name):
         df_fis = calc_fis(df)
         j      = make_judgment(df_fis)
         last        = df_fis.iloc[-1]
-        entry_score = _calc_entry_score(df_fis)
+        entry_data  = calc_entry_score(df_fis)
+        entry_score = float(entry_data["score"])
+        close_v     = float(last["Close"])
+        ema20_v     = float(last.get("EMA20", close_v))
+        ema20_gap   = round((close_v - ema20_v) / ema20_v * 100, 1) if ema20_v > 0 else 0.0
         return {
             "ticker":       ticker,
             "name":         name,
             "fis":          j["fis"],
             "label":        j["label"],
             "label_color":  j["label_color"],
-            "close":        float(last["Close"]),
+            "close":        close_v,
             "trend":        float(last["TrendScore"]),
             "momentum":     float(last["MomentumScore"]),
             "structure":    float(last["StructureScore"]),
             "compression":  float(last["CompressionScore"]),
             "volume":       float(last["VolumeScore"]),
             "risk":         float(last["RiskPenalty"]),
-            "entry_score":  entry_score,
+            "entry_score":        entry_score,
+            "entry_setup_name":   entry_data["setup_name"],
+            "entry_setup_name2":  entry_data.get("setup_name2", ""),
+            "entry_components":   entry_data["components"],
+            "entry_setup_scores": entry_data["setup_scores"],
+            "entry_metrics":      entry_data["metrics"],
+            "ema20_gap":          ema20_gap,
             "ichimoku":     j["ichimoku_status"],
             "summary_l1":   j["summary_l1"],
             "ok": True,
