@@ -17,7 +17,7 @@ from engine.data      import (
 from engine.fis       import calc_fis, make_judgment, calc_entry_score
 from engine.chart     import render_main_chart, render_mini_chart
 from engine.market    import get_market_summary
-from engine.scanner   import scan_market, _calc_entry_score
+from engine.scanner   import scan_market
 from engine.portfolio import buy as port_buy, sell as port_sell, get_positions
 
 BASE_DIR   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
