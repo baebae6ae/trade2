@@ -299,6 +299,9 @@ def api_portfolio():
             pct     = round((profit / cost * 100) if cost > 0 else 0, 2)
             trailing_stop = signal.get("trailing_stop")
             ema20_v       = signal.get("ema20", 0)
+            entry_atr     = pos.get("entry_atr")
+            target1 = round(avg + entry_atr * 2, 4) if entry_atr else None
+            target2 = round(avg + entry_atr * 4, 4) if entry_atr else None
             flags = []
             if trailing_stop:
                 if cur < trailing_stop:
@@ -309,6 +312,10 @@ def api_portfolio():
                 flags.append({"type": "caution", "msg": "📉 EMA20 하회"})
             if signal.get("fis") and signal["fis"] > 60:
                 flags.append({"type": "hot",     "msg": "🔥 과열 구간"})
+            if target2 and cur >= target2:
+                flags.append({"type": "target2", "msg": "🎯 2차 익절 도달"})
+            elif target1 and cur >= target1:
+                flags.append({"type": "target1", "msg": "✅ 1차 익절 도달"})
             enriched.append({
                 "ticker":        ticker,
                 "name":          pos["name"],
@@ -329,6 +336,8 @@ def api_portfolio():
                 "setup_name":    signal["setup_name"],
                 "trailing_stop": trailing_stop,
                 "ema20":         ema20_v,
+                "target1":       target1,
+                "target2":       target2,
                 "flags":         flags,
             })
         total_cost   = round(sum(p["cost"]   for p in enriched), 2)

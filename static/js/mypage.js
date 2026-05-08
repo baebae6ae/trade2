@@ -120,9 +120,27 @@ function renderMpTable(positions) {
         ${emaBlow ? '<span class="mp-warn-badge mp-caution">📉 하회</span>' : ''}
       </div>` : '';
 
-    // 신호 뱃지 (과열 등)
+    // 익절 목표가 (entry_atr 기반)
+    const t1Hit = p.target1 && p.current_price >= p.target1;
+    const t2Hit = p.target2 && p.current_price >= p.target2;
+    const t1Row = p.target1 ? `
+      <div class="mp-risk-row mp-target1-row${t1Hit ? " mp-target-hit" : ""}">
+        <span class="mp-risk-label">1차 익절</span>
+        <span class="mp-risk-value">${fmt(p.target1)}</span>
+        <span class="mp-risk-pct">${pctFrom(p.target1, p.avg_price)}</span>
+        ${t1Hit ? '<span class="mp-warn-badge mp-target-badge">✅ 도달</span>' : ''}
+      </div>` : '';
+    const t2Row = p.target2 ? `
+      <div class="mp-risk-row mp-target2-row${t2Hit ? " mp-target-hit" : ""}">
+        <span class="mp-risk-label">2차 익절</span>
+        <span class="mp-risk-value">${fmt(p.target2)}</span>
+        <span class="mp-risk-pct">${pctFrom(p.target2, p.avg_price)}</span>
+        ${t2Hit ? '<span class="mp-warn-badge mp-target-badge">🎯 도달</span>' : ''}
+      </div>` : '';
+
+    // 신호 뱃지 (과열, 익절 알림)
     const flagsHtml = (p.flags || [])
-      .filter(f => f.type === "hot")
+      .filter(f => ["hot", "target1", "target2"].includes(f.type))
       .map(f => `<span class="mp-flag mp-flag-${f.type}">${f.msg}</span>`).join('');
 
     return `
@@ -135,7 +153,7 @@ function renderMpTable(positions) {
             <span class="mp-signal" style="background:${entryColor(p.entry_score || 0)}22;color:${entryColor(p.entry_score || 0)};border-color:${entryColor(p.entry_score || 0)}55">진입 점수 ${(p.entry_score || 0).toFixed(0)}</span>
             ${flagsHtml}
           </div>
-          ${tsRow}${emaRow}
+          ${tsRow}${emaRow}${t1Row}${t2Row}
         </td>
         <td>${p.quantity.toLocaleString("ko-KR")}주</td>
         <td>${fmt(p.avg_price)}</td>

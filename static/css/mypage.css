@@ -207,3 +207,17 @@
 .mp-caution { background: #e65100; }
 .mp-flag    { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
 .mp-flag-hot { background: #7b1fa222; color: #ce93d8; border: 1px solid #7b1fa255; }
+
+.mp-target1-row { border-color: #43a04744; }
+.mp-target2-row { border-color: #1565c044; }
+.mp-target-hit  { background: #1b5e2010; border-color: #43a047 !important; }
+.mp-target-badge { background: #2e7d32; color: #fff; }
+.mp-flag-target1 { background: #2e7d3222; color: #81c784; border: 1px solid #2e7d3255; }
+.mp-flag-target2 { background: #1565c022; color: #90caf9; border: 1px solid #1565c055; }
+
+.mp-target1-row { border-color: #43a04744; }
+.mp-target2-row { border-color: #1565c044; }
+.mp-target-hit  { background: #1b5e2010; border-color: #43a047 !important; }
+.mp-target-badge { background: #2e7d32; color: #fff; }
+.mp-flag-target1 { background: #2e7d3222; color: #81c784; border: 1px solid #2e7d3255; }
+.mp-flag-target2 { background: #1565c022; color: #90caf9; border: 1px solid #1565c055; }
