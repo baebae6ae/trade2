@@ -57,6 +57,8 @@ def _analyze_one(ticker_name):
         entry_score = float(entry_data["score"])
         close_v     = float(last["Close"])
         ema20_v     = float(last.get("EMA20", close_v))
+        atr_v       = float(last.get("ATR14") or 0)
+        high20_v    = float(df_fis["High"].iloc[-20:].max()) if len(df_fis) >= 20 else float(df_fis["High"].max())
         ema20_gap   = round((close_v - ema20_v) / ema20_v * 100, 1) if ema20_v > 0 else 0.0
         return {
             "ticker":       ticker,
@@ -78,6 +80,8 @@ def _analyze_one(ticker_name):
             "entry_setup_scores": entry_data["setup_scores"],
             "entry_metrics":      entry_data["metrics"],
             "ema20_gap":          ema20_gap,
+            "atr":                atr_v,
+            "high20":             high20_v,
             "ichimoku":     j["ichimoku_status"],
             "summary_l1":   j["summary_l1"],
             "ok": True,

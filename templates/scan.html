@@ -103,49 +103,32 @@
     </div>
     <div class="mbuy-qty-row">
       <label class="mbuy-qty-label">수량 (주)</label>
-      <input type="number" id="scanModalQty" class="mbuy-qty-input" min="1" value="1"
-             oninput="onScanQtyChange()">
-      <span class="mbuy-invest" id="scanInvest">—</span>
+      <input type="number" id="scanModalQty" class="mbuy-qty-input" min="1" value="1" oninput="onScanQtyChange()">
+      <span class="mbuy-invest" id="scanInvest"></span>
     </div>
     <div class="mbuy-price-row">
       <label class="mbuy-price-label">진입가</label>
-      <input type="number" id="scanModalPrice" class="mbuy-price-input" min="0" step="1"
-             oninput="onScanPriceChange()">
+      <input type="number" id="scanModalPrice" class="mbuy-price-input" min="0" step="1" oninput="onScanPriceChange()">
       <span class="mbuy-price-sub">현재가 기준 자동입력</span>
     </div>
-    <div class="mbuy-risk-section">
-      <div class="mbuy-risk-title">🛡 자동 계산된 리스크 관리</div>
-      <div class="mbuy-risk-grid">
-        <div class="mbuy-risk-card mbuy-stop">
-          <div class="mbuy-risk-card-label">손절선</div>
-          <div class="mbuy-risk-card-value" id="scanStop">—</div>
-          <div class="mbuy-risk-card-sub" id="scanStopPct">—</div>
-          <div class="mbuy-risk-card-note" id="scanStopNote">—</div>
-          <input type="number" id="scanStopInput" class="mbuy-stop-edit" min="0" step="1"
-                 placeholder="직접 수정" oninput="onScanStopChange()">
+    <div class="mbuy-trailing-preview">
+      <div class="mbuy-trailing-label">📌 등록 후 마이페이지에서 실시간 자동 추적</div>
+      <div class="mbuy-trailing-main">
+        <div class="mbuy-trailing-item mbuy-ts-item">
+          <span class="mbuy-trailing-key">트레일링 손절</span>
+          <span class="mbuy-trailing-val" id="scanTrailingStop"></span>
+          <span class="mbuy-trailing-pct" id="scanTrailingPct"></span>
         </div>
-        <div class="mbuy-risk-card mbuy-r1r">
-          <div class="mbuy-risk-card-label">리스크 1R</div>
-          <div class="mbuy-risk-card-value" id="scan1R">—</div>
-          <div class="mbuy-risk-card-sub" id="scan1RTotal">총 — 원</div>
-          <div class="mbuy-risk-card-note">손절 시 주당 손실</div>
-        </div>
-        <div class="mbuy-risk-card mbuy-t1">
-          <div class="mbuy-risk-card-label">1차 익절 <span class="mbuy-tag">1/3 청산</span></div>
-          <div class="mbuy-risk-card-value" id="scanT1">—</div>
-          <div class="mbuy-risk-card-sub" id="scanT1Pct">—</div>
-          <div class="mbuy-risk-card-note">R:R 2:1 목표</div>
-        </div>
-        <div class="mbuy-risk-card mbuy-t2">
-          <div class="mbuy-risk-card-label">2차 익절 <span class="mbuy-tag">1/3 청산</span></div>
-          <div class="mbuy-risk-card-value" id="scanT2">—</div>
-          <div class="mbuy-risk-card-sub" id="scanT2Pct">—</div>
-          <div class="mbuy-risk-card-note">R:R 4:1 목표</div>
+        <div class="mbuy-trailing-item">
+          <span class="mbuy-trailing-key">EMA20</span>
+          <span class="mbuy-trailing-val" id="scanEMA20"></span>
+          <span class="mbuy-trailing-signal" id="scanEMASignal"></span>
         </div>
       </div>
+      <div class="mbuy-trailing-desc">최근 20봉 고점 − ATR×2 기준 · 마이페이지에서 매일 자동 업데이트</div>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel"  onclick="closeScanBuyModal()">취소</button>
+      <button class="btn-cancel" onclick="closeScanBuyModal()">취소</button>
       <button class="btn-confirm" onclick="confirmScanBuy()">진입 등록</button>
     </div>
   </div>

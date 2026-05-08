@@ -35,15 +35,22 @@ def _signal_snapshot(ticker: str, period: str = "1y", timeframe: str = "daily") 
     fis_df = calc_fis(ind_df)
     judgment = make_judgment(fis_df)
     entry = calc_entry_score(fis_df)
-    row = fis_df.iloc[-1]
+    row     = fis_df.iloc[-1]
+    atr_v   = float(row.get("ATR14") or 0)
+    ema20_v = float(row.get("EMA20") or 0)
+    high20  = float(price_df["High"].iloc[-20:].max()) if len(price_df) >= 20 else float(price_df["High"].max())
+    trailing_stop = round(high20 - atr_v * 2, 4) if atr_v > 0 else None
     return {
-        "fis": float(row.get("FIS") or 0),
-        "entry_score": float(entry["score"]),
-        "risk": float(row.get("RiskPenalty") or 0),
-        "trend": float(row.get("TrendScore") or 0),
-        "label": judgment["label"],
-        "summary_l1": judgment["summary_l1"],
-        "setup_name": entry.get("setup_name", "일반"),
+        "fis":           float(row.get("FIS") or 0),
+        "entry_score":   float(entry["score"]),
+        "risk":          float(row.get("RiskPenalty") or 0),
+        "trend":         float(row.get("TrendScore") or 0),
+        "label":         judgment["label"],
+        "summary_l1":    judgment["summary_l1"],
+        "setup_name":    entry.get("setup_name", "h일반"),
+        "atr":           atr_v,
+        "ema20":         ema20_v,
+        "trailing_stop": trailing_stop,
     }
 
 
@@ -217,6 +224,8 @@ def api_analyze(ticker: str):
                 "pullback_5d":   pullback_5d,
                 "day_change_pct": day_change_pct,
                 "day_change_abs": day_change_abs,
+                "ema20":  float(last.get("EMA20") or 0),
+                "high20": float(fis_df["High"].iloc[-20:].max()) if len(fis_df) >= 20 else float(fis_df["High"].max()),
             }
         })
     except ValueError as e:
@@ -288,6 +297,18 @@ def api_portfolio():
             cost    = round(avg * qty, 2)
             profit  = round(value - cost, 2)
             pct     = round((profit / cost * 100) if cost > 0 else 0, 2)
+            trailing_stop = signal.get("trailing_stop")
+            ema20_v       = signal.get("ema20", 0)
+            flags = []
+            if trailing_stop:
+                if cur < trailing_stop:
+                    flags.append({"type": "danger",  "msg": "🚨 손절선 이탈"})
+                elif cur <= trailing_stop * 1.02:
+                    flags.append({"type": "warning", "msg": "⚠ 손절 근접"})
+            if ema20_v and cur < ema20_v:
+                flags.append({"type": "caution", "msg": "📉 EMA20 하회"})
+            if signal.get("fis") and signal["fis"] > 60:
+                flags.append({"type": "hot",     "msg": "🔥 과열 구간"})
             enriched.append({
                 "ticker":        ticker,
                 "name":          pos["name"],
@@ -306,6 +327,9 @@ def api_portfolio():
                 "signal_label":  signal["label"],
                 "signal_summary": signal["summary_l1"],
                 "setup_name":    signal["setup_name"],
+                "trailing_stop": trailing_stop,
+                "ema20":         ema20_v,
+                "flags":         flags,
             })
         total_cost   = round(sum(p["cost"]   for p in enriched), 2)
         total_value  = round(sum(p["value"]  for p in enriched), 2)
@@ -330,26 +354,18 @@ def api_portfolio():
 
 @app.route("/api/portfolio/buy", methods=["POST"])
 def api_buy():
-    body = request.get_json(silent=True) or {}
-    ticker     = body.get("ticker", "").strip().upper()
-    name       = body.get("name", ticker)
-    qty        = int(body.get("qty", 0))
-    price      = float(body.get("price", 0))
-    stop_price = body.get("stop_price")
-    target1    = body.get("target1")
-    target2    = body.get("target2")
-    setup_name = body.get("setup_name", "")
-    entry_atr  = body.get("entry_atr")
+    body      = request.get_json(silent=True) or {}
+    ticker    = body.get("ticker", "").strip().upper()
+    name      = body.get("name", ticker)
+    qty       = int(body.get("qty", 0))
+    price     = float(body.get("price", 0))
+    entry_atr = body.get("entry_atr")
     if not ticker:
         return jsonify({"ok": False, "error": "ticker 필요"}), 400
     try:
         result = port_buy(
             ticker, name, qty, price,
-            stop_price=float(stop_price) if stop_price else None,
-            target1=float(target1)       if target1    else None,
-            target2=float(target2)       if target2    else None,
-            setup_name=setup_name,
-            entry_atr=float(entry_atr)   if entry_atr  else None,
+            entry_atr=float(entry_atr) if entry_atr else None,
         )
         return jsonify({"ok": True, "position": result})
     except ValueError as e:

@@ -245,29 +245,13 @@ let _currentName   = "";
 let _currentPrice  = 0;
 let _currentATR    = 0;
 let _currentSetup  = "";
-let _calcStop      = 0;   // 계산된 손절가 (모달에서 수정 가능)
+let _currentHigh20 = 0;
+let _currentEMA20  = 0;
 
-// ── 손절/익절 자동 계산 ───────────────────────────────────
-function calcRiskLevels(entryPrice, atr, setupName) {
-  const multipliers = {
-    "추세 눌림":  1.5,
-    "압축 돌파":  1.2,
-    "모멘텀 지속": 1.8,
-    "반전 초기":  2.2,
-  };
-  const mult = multipliers[setupName] || 1.8;
-  const stop    = entryPrice - atr * mult;
-  const risk1R  = entryPrice - stop;
-  const target1 = entryPrice + risk1R * 2.0;
-  const target2 = entryPrice + risk1R * 4.0;
-  const trailRef = atr * 2.5;
-  return { stop, risk1R, target1, target2, trailRef, mult };
-}
-
+// ── 유틸 ─────────────────────────────────────────────────
 function fmtP(v) {
   const n = typeof v === "number" ? v : parseFloat(v);
   if (isNaN(n)) return "—";
-  // 천단위 구분 + 소수 없이
   return n.toLocaleString("ko-KR", {maximumFractionDigits: 0});
 }
 
@@ -277,70 +261,39 @@ function pctFromEntry(target, entry) {
   return (p >= 0 ? "+" : "") + p.toFixed(1) + "%";
 }
 
-function updateModalCalc() {
-  const entry = parseFloat(document.getElementById("modalPrice").value) || _currentPrice;
-  const qty   = parseInt(document.getElementById("modalQty").value) || 1;
-  const stopInput = parseFloat(document.getElementById("modalStopInput").value);
-  const stop = isNaN(stopInput) || stopInput <= 0 ? _calcStop : stopInput;
-  const risk1R  = entry - stop;
-  const target1 = entry + risk1R * 2.0;
-  const target2 = entry + risk1R * 4.0;
-
-  document.getElementById("modalInvest").textContent = fmtP(entry * qty) + "원";
-  document.getElementById("modalStop").textContent   = fmtP(stop);
-  document.getElementById("modalStopPct").textContent = pctFromEntry(stop, entry);
-  document.getElementById("modal1R").textContent     = fmtP(risk1R) + "원/주";
-  document.getElementById("modal1RTotal").textContent = "총 " + fmtP(risk1R * qty) + "원 위험";
-  document.getElementById("modalT1").textContent     = fmtP(target1);
-  document.getElementById("modalT1Pct").textContent  = pctFromEntry(target1, entry);
-  document.getElementById("modalT2").textContent     = fmtP(target2);
-  document.getElementById("modalT2Pct").textContent  = pctFromEntry(target2, entry);
-  document.getElementById("modalTrailing").textContent =
-    `트레일링 스탑: 매 봉 고점 − ATR(${fmtP(_currentATR)}) × 2.5 = ${fmtP(_currentATR * 2.5)}`;
-
-  // 저장용 값 노출
-  document.getElementById("modalStopInput").dataset.computed = stop;
-  document.getElementById("modalStopInput").dataset.target1  = target1;
-  document.getElementById("modalStopInput").dataset.target2  = target2;
+function onModalQtyChange() {
+  const qty   = parseInt(document.getElementById("modalQty").value)   || 1;
+  const price = parseFloat(document.getElementById("modalPrice").value) || _currentPrice;
+  document.getElementById("modalInvest").textContent = fmtP(price * qty) + "원";
 }
 
-function onModalQtyChange()   { updateModalCalc(); }
 function onModalPriceChange() {
-  const entry = parseFloat(document.getElementById("modalPrice").value) || _currentPrice;
-  const rl = calcRiskLevels(entry, _currentATR, _currentSetup);
-  _calcStop = rl.stop;
-  document.getElementById("modalStopInput").value = "";  // 수동 수정 초기화
-  updateModalCalc();
+  const qty   = parseInt(document.getElementById("modalQty").value)   || 1;
+  const price = parseFloat(document.getElementById("modalPrice").value) || 0;
+  document.getElementById("modalInvest").textContent = price ? fmtP(price * qty) + "원" : "—";
 }
-function onModalStopChange()  { updateModalCalc(); }
 
 // ── 매수/매도 모달 ─────────────────────────────────────────
 function openBuyModal() {
   const entry = Math.round(_currentPrice);
-  const rl    = calcRiskLevels(entry, _currentATR, _currentSetup);
-  _calcStop   = rl.stop;
-
-  const mult = rl.mult;
-  const stopNotes = {
-    "추세 눌림":  `EMA 근접 눌림 구조 기준 (ATR×${mult})`,
-    "압축 돌파":  `돌파 전 박스 하단 기준 (ATR×${mult})`,
-    "모멘텀 지속": `정배열 유지 기준선 (ATR×${mult})`,
-    "반전 초기":  `불확실성 여유 반영 (ATR×${mult})`,
-  };
+  const ts    = _currentHigh20 > 0 ? Math.round(_currentHigh20 - _currentATR * 2) : 0;
 
   document.getElementById("modalTitle").textContent        = "신규 진입 등록";
   document.getElementById("modalSubTicker").textContent    = `${_currentName} (${_currentTicker})`;
-  document.getElementById("modalScenarioChip").textContent = _currentSetup || "시나리오";
-  document.getElementById("modalStopNote").textContent     = stopNotes[_currentSetup] || `ATR×${mult}`;
+  document.getElementById("modalScenarioChip").textContent = _currentSetup || "분석";
   document.getElementById("modalPrice").value              = entry;
   document.getElementById("modalQty").value                = 1;
-  document.getElementById("modalStopInput").value          = "";
+  document.getElementById("modalInvest").textContent       = fmtP(entry) + "원";
+
+  document.getElementById("modalTrailingStop").textContent = ts > 0 ? fmtP(ts) : "—";
+  document.getElementById("modalTrailingPct").textContent  = ts > 0 ? pctFromEntry(ts, entry) : "";
+  document.getElementById("modalEMA20").textContent        = _currentEMA20 > 0 ? fmtP(_currentEMA20) : "—";
+  document.getElementById("modalEMASignal").textContent    = _currentEMA20 > 0
+    ? (entry >= _currentEMA20 ? "✓ 상회" : "⬇ 하회 중") : "";
 
   document.getElementById("modalBuySection").style.display  = "";
   document.getElementById("modalSellSection").style.display = "none";
   document.getElementById("tradeModal").style.display = "flex";
-
-  updateModalCalc();
   document.getElementById("modalQty").focus();
 }
 
@@ -368,17 +321,10 @@ async function confirmBuy() {
   if (!qty   || qty   < 1) { alert("수량을 입력하세요.");   return; }
   if (!price || price <= 0) { alert("매수가를 입력하세요."); return; }
 
-  const si = document.getElementById("modalStopInput");
-  const stop    = parseFloat(si.value) > 0 ? parseFloat(si.value) : parseFloat(si.dataset.computed);
-  const target1 = parseFloat(si.dataset.target1);
-  const target2 = parseFloat(si.dataset.target2);
-
   const res = await fetch("/api/portfolio/buy", {
     method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       ticker: _currentTicker, name: _currentName, qty, price,
-      stop_price: stop || null, target1: target1 || null,
-      target2: target2 || null, setup_name: _currentSetup,
       entry_atr: _currentATR || null,
     })
   }).then(r => r.json());
@@ -445,6 +391,8 @@ async function loadAnalysis(ticker) {
     _currentPrice = l.close;
     _currentATR   = l.atr   || 0;
     _currentSetup = d.entry?.setup_name || "";
+    _currentHigh20 = l.high20 || 0;
+    _currentEMA20  = l.ema20  || 0;
 
     // 종목 헤더
     document.getElementById("stockName").textContent     = _currentName;

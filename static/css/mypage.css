@@ -156,7 +156,8 @@
 .mp-empty-sub   { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
 
 
-/* ── 포지션 손절/익절 표시 ──────────────────────────────── */
+
+/* ── 포지션 리스크 표시 ──────────────────────────────────── */
 .mp-setup-chip {
   display: inline-block; background: #1a3a2a; color: #56d364;
   border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 600;
@@ -164,15 +165,45 @@
 .mp-risk-row {
   display: flex; align-items: center; gap: 6px;
   font-size: 11px; margin-top: 4px; padding: 3px 6px;
-  border-radius: 4px; background: var(--bg3);
+  border-radius: 4px; background: var(--bg3); border: 1px solid transparent;
 }
-.mp-stop-near { background: #c6282818; border: 1px solid #c6282855; }
-.mp-target1-row { background: #2ea04310; }
-.mp-target2-row { background: #56d36410; }
-.mp-risk-label { color: var(--text3); min-width: 52px; font-size: 10px; }
-.mp-risk-value { font-weight: 700; color: var(--text1); }
-.mp-risk-pct   { color: var(--text2); margin-left: 2px; }
-.mp-warn-badge {
-  margin-left: auto; background: #c62828; color: #fff;
+.mp-stop-near   { background: #c6282812; border-color: #c6282844; }
+.mp-stop-broken { background: #c6282822; border-color: #c62828; }
+.mp-ema-below   { background: #f9a82510; border-color: #f9a82544; }
+.mp-risk-label  { color: var(--text3); min-width: 72px; font-size: 10px; }
+.mp-risk-value  { font-weight: 700; color: var(--text1); }
+.mp-risk-pct    { color: var(--text2); margin-left: 2px; }
+.mp-warn-badge  {
+  margin-left: auto; background: #e65100; color: #fff;
   border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 700;
 }
+.mp-danger  { background: #c62828; }
+.mp-caution { background: #e65100; }
+.mp-flag    { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+.mp-flag-hot { background: #7b1fa222; color: #ce93d8; border: 1px solid #7b1fa255; }
+
+
+/* ── 포지션 리스크 표시 ──────────────────────────────────── */
+.mp-setup-chip {
+  display: inline-block; background: #1a3a2a; color: #56d364;
+  border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 600;
+}
+.mp-risk-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; margin-top: 4px; padding: 3px 6px;
+  border-radius: 4px; background: var(--bg3); border: 1px solid transparent;
+}
+.mp-stop-near   { background: #c6282812; border-color: #c6282844; }
+.mp-stop-broken { background: #c6282822; border-color: #c62828; }
+.mp-ema-below   { background: #f9a82510; border-color: #f9a82544; }
+.mp-risk-label  { color: var(--text3); min-width: 72px; font-size: 10px; }
+.mp-risk-value  { font-weight: 700; color: var(--text1); }
+.mp-risk-pct    { color: var(--text2); margin-left: 2px; }
+.mp-warn-badge  {
+  margin-left: auto; background: #e65100; color: #fff;
+  border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 700;
+}
+.mp-danger  { background: #c62828; }
+.mp-caution { background: #e65100; }
+.mp-flag    { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+.mp-flag-hot { background: #7b1fa222; color: #ce93d8; border: 1px solid #7b1fa255; }

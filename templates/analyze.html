@@ -151,7 +151,7 @@
         <div class="modal-scenario-chip" id="modalScenarioChip"></div>
       </div>
 
-      <!-- 수량 입력 (유일한 사용자 입력) -->
+      <!-- 수량 입력 -->
       <div class="mbuy-qty-row">
         <label class="mbuy-qty-label">수량 (주)</label>
         <input type="number" id="modalQty" class="mbuy-qty-input" min="1" value="1"
@@ -159,7 +159,7 @@
         <span class="mbuy-invest" id="modalInvest">—</span>
       </div>
 
-      <!-- 진입가 (읽기전용, 수정 가능) -->
+      <!-- 진입가 -->
       <div class="mbuy-price-row">
         <label class="mbuy-price-label">진입가</label>
         <input type="number" id="modalPrice" class="mbuy-price-input" min="0" step="1"
@@ -167,45 +167,22 @@
         <span class="mbuy-price-sub">현재가 기준 자동입력</span>
       </div>
 
-      <!-- 리스크 관리 자동 계산 -->
-      <div class="mbuy-risk-section">
-        <div class="mbuy-risk-title">🛡 자동 계산된 리스크 관리</div>
-
-        <div class="mbuy-risk-grid">
-          <div class="mbuy-risk-card mbuy-stop">
-            <div class="mbuy-risk-card-label">손절선</div>
-            <div class="mbuy-risk-card-value" id="modalStop">—</div>
-            <div class="mbuy-risk-card-sub" id="modalStopPct">—</div>
-            <div class="mbuy-risk-card-note" id="modalStopNote">—</div>
-            <input type="number" id="modalStopInput" class="mbuy-stop-edit" min="0" step="1"
-                   placeholder="직접 수정" oninput="onModalStopChange()">
+      <!-- 트레일링 손절 미리보기 (등록 시 참고용) -->
+      <div class="mbuy-trailing-preview">
+        <div class="mbuy-trailing-label">📌 등록 후 마이페이지에서 실시간 자동 추적</div>
+        <div class="mbuy-trailing-main">
+          <div class="mbuy-trailing-item mbuy-ts-item">
+            <span class="mbuy-trailing-key">트레일링 손절</span>
+            <span class="mbuy-trailing-val" id="modalTrailingStop">—</span>
+            <span class="mbuy-trailing-pct" id="modalTrailingPct"></span>
           </div>
-
-          <div class="mbuy-risk-card mbuy-r1r">
-            <div class="mbuy-risk-card-label">리스크 1R</div>
-            <div class="mbuy-risk-card-value" id="modal1R">—</div>
-            <div class="mbuy-risk-card-sub" id="modal1RTotal">총 — 원</div>
-            <div class="mbuy-risk-card-note">손절 시 주당 손실</div>
-          </div>
-
-          <div class="mbuy-risk-card mbuy-t1">
-            <div class="mbuy-risk-card-label">1차 익절 <span class="mbuy-tag">1/3 청산</span></div>
-            <div class="mbuy-risk-card-value" id="modalT1">—</div>
-            <div class="mbuy-risk-card-sub" id="modalT1Pct">—</div>
-            <div class="mbuy-risk-card-note">R:R 2:1 목표 · 손익분기로 손절 이동</div>
-          </div>
-
-          <div class="mbuy-risk-card mbuy-t2">
-            <div class="mbuy-risk-card-label">2차 익절 <span class="mbuy-tag">1/3 청산</span></div>
-            <div class="mbuy-risk-card-value" id="modalT2">—</div>
-            <div class="mbuy-risk-card-sub" id="modalT2Pct">—</div>
-            <div class="mbuy-risk-card-note">R:R 4:1 목표 · 나머지 트레일링</div>
+          <div class="mbuy-trailing-item">
+            <span class="mbuy-trailing-key">EMA20</span>
+            <span class="mbuy-trailing-val" id="modalEMA20">—</span>
+            <span class="mbuy-trailing-signal" id="modalEMASignal"></span>
           </div>
         </div>
-
-        <div class="mbuy-trailing-note" id="modalTrailing">
-          트레일링 스탑: 고점 - ATR×2.5 자동 이동
-        </div>
+        <div class="mbuy-trailing-desc">최근 20봉 고점 − ATR×2 기준 · 매일 자동 업데이트</div>
       </div>
 
       <div class="modal-footer">

@@ -97,39 +97,45 @@ function renderMpTable(positions) {
     const dSign = p.day_change_pct >= 0 ? "+" : "";
     const dCls  = p.day_change_pct >= 0 ? "var(--bull)" : "var(--bear)";
 
-    // 손절/익절 정보
-    const stopNear = p.stop_price && p.current_price <= p.stop_price * 1.03;
-    const stopRow = p.stop_price ? `
-      <div class="mp-risk-row${stopNear ? " mp-stop-near" : ""}">
-        <span class="mp-risk-label">손절</span>
-        <span class="mp-risk-value">${fmt(p.stop_price)}</span>
-        <span class="mp-risk-pct">${pctFrom(p.stop_price, p.avg_price)}</span>
-        ${stopNear ? '<span class="mp-warn-badge">⚠ 근접</span>' : ''}
+    // 트레일링 손절
+    const ts = p.trailing_stop;
+    const tsBroken = ts && p.current_price < ts;
+    const tsNear   = ts && !tsBroken && p.current_price <= ts * 1.02;
+    const tsRow = ts ? `
+      <div class="mp-risk-row${tsBroken ? " mp-stop-broken" : tsNear ? " mp-stop-near" : ""}">
+        <span class="mp-risk-label">트레일링 손절</span>
+        <span class="mp-risk-value">${fmt(ts)}</span>
+        <span class="mp-risk-pct">${pctFrom(ts, p.avg_price)}</span>
+        ${tsBroken ? '<span class="mp-warn-badge mp-danger">🚨 이탈</span>' :
+          tsNear   ? '<span class="mp-warn-badge">⚠ 근접</span>' : ''}
       </div>` : '';
-    const t1Row = p.target1 ? `
-      <div class="mp-risk-row mp-target1-row">
-        <span class="mp-risk-label">1차 목표</span>
-        <span class="mp-risk-value">${fmt(p.target1)}</span>
-        <span class="mp-risk-pct">${pctFrom(p.target1, p.avg_price)}</span>
+
+    // EMA20
+    const emaBlow = p.ema20 && p.current_price < p.ema20;
+    const emaRow = p.ema20 ? `
+      <div class="mp-risk-row${emaBlow ? " mp-ema-below" : ""}">
+        <span class="mp-risk-label">EMA20</span>
+        <span class="mp-risk-value">${fmt(p.ema20)}</span>
+        <span class="mp-risk-pct">${pctFrom(p.ema20, p.avg_price)}</span>
+        ${emaBlow ? '<span class="mp-warn-badge mp-caution">📉 하회</span>' : ''}
       </div>` : '';
-    const t2Row = p.target2 ? `
-      <div class="mp-risk-row mp-target2-row">
-        <span class="mp-risk-label">2차 목표</span>
-        <span class="mp-risk-value">${fmt(p.target2)}</span>
-        <span class="mp-risk-pct">${pctFrom(p.target2, p.avg_price)}</span>
-      </div>` : '';
+
+    // 신호 뱃지 (과열 등)
+    const flagsHtml = (p.flags || [])
+      .filter(f => f.type === "hot")
+      .map(f => `<span class="mp-flag mp-flag-${f.type}">${f.msg}</span>`).join('');
 
     return `
       <tr>
         <td>
           <div class="mp-name">${p.name}</div>
-          <div class="mp-ticker">${p.ticker}${p.setup_name ? ` · <span class="mp-setup-chip">${p.setup_name}</span>` : ''}</div>
+          <div class="mp-ticker">${p.ticker}${p.setup_name && p.setup_name !== "일반" ? ` · <span class="mp-setup-chip">${p.setup_name}</span>` : ''}</div>
           <div class="mp-signal-row">
             <span class="mp-signal" style="background:${fisColor(p.fis || 0)}22;color:${fisColor(p.fis || 0)};border-color:${fisColor(p.fis || 0)}55">FIS ${(p.fis || 0) >= 0 ? "+" : ""}${(p.fis || 0).toFixed(0)}</span>
             <span class="mp-signal" style="background:${entryColor(p.entry_score || 0)}22;color:${entryColor(p.entry_score || 0)};border-color:${entryColor(p.entry_score || 0)}55">진입 점수 ${(p.entry_score || 0).toFixed(0)}</span>
-            <span class="mp-signal mp-signal-risk">위험 ${(p.risk || 0).toFixed(0)}</span>
+            ${flagsHtml}
           </div>
-          ${stopRow}${t1Row}${t2Row}
+          ${tsRow}${emaRow}
         </td>
         <td>${p.quantity.toLocaleString("ko-KR")}주</td>
         <td>${fmt(p.avg_price)}</td>

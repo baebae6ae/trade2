@@ -250,64 +250,43 @@ function closeChartModal() {
 }
 
 // ── 매수 모달 ──────────────────────────────────────────
-let _scanTicker = "", _scanName = "", _scanATR = 0, _scanSetup = "", _scanCalcStop = 0;
+let _scanTicker = "", _scanName = "", _scanATR = 0, _scanHigh20 = 0;
 
-function _scanCalcRisk(entry, atr, setup) {
-  const m = {"추세 눌림":1.5,"압축 돌파":1.2,"모멘텀 지속":1.8,"반전 초기":2.2}[setup] || 1.8;
-  const stop = entry - atr * m;
-  return { stop, risk1R: entry - stop, target1: entry + (entry-stop)*2, target2: entry + (entry-stop)*4, mult: m };
-}
 function _fmtP2(v) { return (Math.round(v)||0).toLocaleString("ko-KR"); }
 function _pct2(t, e) { const p=(t-e)/e*100; return (p>=0?"+":"")+p.toFixed(1)+"%"; }
 
-function updateScanModalCalc() {
-  const entry = parseFloat(document.getElementById("scanModalPrice").value) || 0;
-  const qty   = parseInt(document.getElementById("scanModalQty").value)     || 1;
-  const stopRaw = parseFloat(document.getElementById("scanStopInput").value);
-  const stop = (stopRaw > 0) ? stopRaw : _scanCalcStop;
-  const risk1R  = entry - stop;
-  const target1 = entry + risk1R * 2;
-  const target2 = entry + risk1R * 4;
-  document.getElementById("scanInvest").textContent   = _fmtP2(entry * qty) + "원";
-  document.getElementById("scanStop").textContent     = _fmtP2(stop);
-  document.getElementById("scanStopPct").textContent  = _pct2(stop, entry);
-  document.getElementById("scan1R").textContent       = _fmtP2(risk1R) + "원/주";
-  document.getElementById("scan1RTotal").textContent  = "총 " + _fmtP2(risk1R * qty) + "원 위험";
-  document.getElementById("scanT1").textContent       = _fmtP2(target1);
-  document.getElementById("scanT1Pct").textContent    = _pct2(target1, entry);
-  document.getElementById("scanT2").textContent       = _fmtP2(target2);
-  document.getElementById("scanT2Pct").textContent    = _pct2(target2, entry);
-  document.getElementById("scanStopInput").dataset.t1   = target1;
-  document.getElementById("scanStopInput").dataset.t2   = target2;
-  document.getElementById("scanStopInput").dataset.stop = stop;
+function onScanQtyChange() {
+  const qty   = parseInt(document.getElementById("scanModalQty").value)   || 1;
+  const price = parseFloat(document.getElementById("scanModalPrice").value) || 0;
+  document.getElementById("scanInvest").textContent = price ? _fmtP2(price * qty) + "원" : "—";
 }
-function onScanQtyChange()   { updateScanModalCalc(); }
 function onScanPriceChange() {
-  const entry = parseFloat(document.getElementById("scanModalPrice").value) || 0;
-  const rl = _scanCalcRisk(entry, _scanATR, _scanSetup);
-  _scanCalcStop = rl.stop;
-  document.getElementById("scanStopInput").value = "";
-  updateScanModalCalc();
+  const qty   = parseInt(document.getElementById("scanModalQty").value)   || 1;
+  const price = parseFloat(document.getElementById("scanModalPrice").value) || 0;
+  document.getElementById("scanInvest").textContent = price ? _fmtP2(price * qty) + "원" : "—";
 }
-function onScanStopChange()  { updateScanModalCalc(); }
 
 function openScanBuyModal(ticker, name, price) {
   const c = _scanCandidates.find(x => x.ticker === ticker) || {};
   _scanTicker = ticker;
   _scanName   = name;
-  _scanATR    = c.atr || c.entry_metrics?.atr || 0;
-  _scanSetup  = c.entry_setup_name || "";
+  _scanATR    = c.atr || 0;
+  _scanHigh20 = c.high20 || 0;
   const entry = Math.round(price);
-  const rl    = _scanCalcRisk(entry, _scanATR, _scanSetup);
-  _scanCalcStop = rl.stop;
+  const ts    = _scanHigh20 > 0 ? Math.round(_scanHigh20 - _scanATR * 2) : 0;
+  const ema20 = parseFloat(c.entry_metrics?.ema20 || 0) || 0;
+
   document.getElementById("scanModalSub").textContent      = `${name} (${ticker})`;
-  document.getElementById("scanModalScenario").textContent = _scanSetup || "시나리오";
+  document.getElementById("scanModalScenario").textContent = c.entry_setup_name || "분석";
   document.getElementById("scanModalPrice").value          = entry;
   document.getElementById("scanModalQty").value            = 1;
-  document.getElementById("scanStopInput").value           = "";
-  document.getElementById("scanStopNote").textContent      = `${_scanSetup || ""} 기준 ×${rl.mult}`;
+  document.getElementById("scanInvest").textContent        = _fmtP2(entry) + "원";
+  document.getElementById("scanTrailingStop").textContent  = ts > 0 ? _fmtP2(ts) : "—";
+  document.getElementById("scanTrailingPct").textContent   = ts > 0 ? _pct2(ts, entry) : "";
+  document.getElementById("scanEMA20").textContent         = ema20 > 0 ? _fmtP2(ema20) : "—";
+  document.getElementById("scanEMASignal").textContent     = ema20 > 0
+    ? (entry >= ema20 ? "✓ 상회" : "⬇ 하회 중") : "";
   document.getElementById("scanBuyModal").style.display    = "flex";
-  updateScanModalCalc();
   document.getElementById("scanModalQty").focus();
 }
 function closeScanBuyModal() {
@@ -318,19 +297,12 @@ async function confirmScanBuy() {
   const price = parseFloat(document.getElementById("scanModalPrice").value);
   if (!qty || qty < 1)     { alert("수량을 입력하세요."); return; }
   if (!price || price <= 0){ alert("매수가를 입력하세요."); return; }
-  const si = document.getElementById("scanStopInput");
-  const stop    = parseFloat(si.value) > 0 ? parseFloat(si.value) : parseFloat(si.dataset.stop);
-  const target1 = parseFloat(si.dataset.t1);
-  const target2 = parseFloat(si.dataset.t2);
   try {
     const res = await fetch("/api/portfolio/buy", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        ticker: _scanTicker, name: _scanName, qty, price,
-        stop_price: stop||null, target1: target1||null,
-        target2: target2||null, setup_name: _scanSetup, entry_atr: _scanATR||null
-      })
+      body: JSON.stringify({ticker: _scanTicker, name: _scanName, qty, price,
+                            entry_atr: _scanATR || null})
     }).then(r => r.json());
     closeScanBuyModal();
     if (res.ok) showToast(`${_scanName} ${qty}주 진입 등록 완료`);
