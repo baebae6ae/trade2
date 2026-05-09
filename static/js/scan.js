@@ -218,9 +218,10 @@ function toggleDetail(idx) {
   const body = document.getElementById(`det-${idx}`);
   const btn  = document.getElementById(`det-btn-${idx}`);
   if (!body) return;
-  const open = body.style.display === "block";
-  body.style.display = open ? "none" : "block";
-  btn.textContent = open ? "▶ 상세 설명" : "▼ 상세 설명 닫기";
+  const open = body.classList.contains("open");
+  body.classList.toggle("open", !open);
+  btn.classList.toggle("open", !open);
+  btn.textContent = open ? "상세 설명 보기" : "상세 설명 닫기";
 }
 
 // ── 차트 분석 모달 ─────────────────────────────────────────
@@ -270,6 +271,12 @@ async function openChartModal(idx) {
 
 function closeChartModal() {
   document.getElementById("chartModal").style.display = "none";
+}
+
+function openChartModalByTicker(ticker) {
+  const idx = _scanCandidates.findIndex(x => x.ticker === ticker);
+  if (idx < 0) return;
+  openChartModal(idx);
 }
 
 // ── 매수 모달 ──────────────────────────────────────────
@@ -347,13 +354,13 @@ document.addEventListener("DOMContentLoaded", () => {
 function renderKumoCard(c) {
   const fmt2 = v => v >= 1000 ? v.toLocaleString() : v.toFixed(2);
   const cloudBadge = c.bull_cloud
-    ? `<span style="background:#E53935;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">상승구름</span>`
-    : `<span style="background:#2196F3;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">구름위</span>`;
+    ? `<span style="background:#E53935;color:#fff;padding:2px 8px;font-size:11px;font-weight:700">상승구름</span>`
+    : `<span style="background:#2196F3;color:#fff;padding:2px 8px;font-size:11px;font-weight:700">구름위</span>`;
   const volBadge = c.daily_vol
-    ? `<span style="background:#2ea043;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">거래량 폭발</span>`
-    : `<span style="background:var(--bg3);color:var(--text2);padding:2px 8px;border-radius:12px;font-size:11px;">일봉 확인필요</span>`;
+    ? `<span style="background:#2ea043;color:#fff;padding:2px 8px;font-size:11px;font-weight:700">거래량 폭발</span>`
+    : `<span style="background:var(--neutral-200);color:var(--neutral-600);padding:2px 8px;font-size:11px;">일봉 확인필요</span>`;
   return `
-    <div class="candidate-card" onclick="openChartModal('${c.ticker}','${c.name}')">
+    <div class="candidate-card" onclick="openChartModalByTicker('${c.ticker}')">
       <div class="cc-top">
         <div>
           <div class="cc-name">${c.name}</div>
@@ -366,10 +373,10 @@ function renderKumoCard(c) {
       </div>
       <div class="cc-scores" style="margin-top:10px">
         <span class="cs-chip pos" title="구름 아래 체류 주수">구름아래 ${c.below_weeks}주</span>
-        <span class="cs-chip" style="background:var(--bg3);color:var(--text1)" title="구름 최소 두께">구름두께 ${c.cloud_thin}%</span>
+        <span class="cs-chip" style="background:var(--neutral-200);color:var(--newsprint-ink)" title="구름 최소 두께">구름두께 ${c.cloud_thin}%</span>
       </div>
-      <div style="margin-top:8px;font-size:11px;color:var(--text2)">
-        주봉 구름 아래 <strong style="color:var(--text1)">${c.below_weeks}주</strong> 체류 후 상향 돌파 · 구름 반전 확인
+      <div style="margin-top:8px;font-size:11px;color:var(--neutral-600)">
+        주봉 구름 아래 <strong style="color:var(--newsprint-ink)">${c.below_weeks}주</strong> 체류 후 상향 돌파 · 구름 반전 확인
       </div>
     </div>`;
 }

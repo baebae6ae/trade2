@@ -165,7 +165,7 @@ function render52hGrid(grid, stocks) {
     const gapSign = s.gap_pct  >= 0 ? "+" : "";
     const strColor = s.streak >= 8 ? "#F59E0B" : s.streak >= 4 ? "#818CF8" : "#22D3EE";
     return `
-      <div class="h52-card" onclick="goAnalyze('${s.ticker}')">
+      <div class="h52-card" onclick="goAnalyze('${s.ticker}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'){goAnalyze('${s.ticker}')}" title="${s.name} 분석 열기">
         <div class="h52-top">
           <div>
             <div class="h52-name">${s.name}</div>
@@ -192,7 +192,7 @@ function render52hGrid(grid, stocks) {
         </div>
       </div>`;
   }).join("");
-  grid.innerHTML = `<div class="h52-cards">${cards}</div>`;
+  grid.innerHTML = cards;
 }
 
 // ── 포트폴리오 ─────────────────────────────────────────
@@ -238,7 +238,13 @@ function renderPortfolio(wrap, positions, summary) {
         <td>${fmt(p.value)}</td>
         <td class="${pCls}">${sign}${fmt(p.profit)}</td>
         <td class="${pCls}">${sign}${p.profit_pct.toFixed(2)}%</td>
-        <td><button class="pt-btn pt-btn-analyze" onclick="goAnalyze('${p.ticker}')">분석</button></td>
+        <td>
+          <div class="pt-actions">
+            <button class="pt-btn pt-btn-analyze" onclick="goAnalyze('${p.ticker}')">분석</button>
+            <button class="pt-btn pt-btn-buy" onclick="openDashTradeModal('buy','${p.ticker}','${p.name}',${p.current_price},${p.quantity})">추가매수</button>
+            <button class="pt-btn pt-btn-sell" onclick="openDashTradeModal('sell','${p.ticker}','${p.name}',${p.current_price},${p.quantity})">매도</button>
+          </div>
+        </td>
       </tr>`;
   }).join("");
 
@@ -274,4 +280,97 @@ document.addEventListener("DOMContentLoaded", () => {
   // 우선순위 3: 52주 신고가 (배치, 느림)
   setTimeout(() => load52h("kospi", document.querySelector(".h52-tab")), 1000);
 });
+
+// ── Dashboard Trade Modal ───────────────────────────
+let _dashTrade = { type: "buy", ticker: "", name: "", currentPrice: 0, maxQty: 0 };
+
+function _dashNum(v) { return Number(v || 0).toLocaleString("ko-KR"); }
+
+function openDashTradeModal(type, ticker, name, currentPrice, maxQty) {
+  _dashTrade = { type, ticker, name, currentPrice: Number(currentPrice || 0), maxQty: Number(maxQty || 0) };
+
+  const modal = document.getElementById("dashTradeModal");
+  const title = document.getElementById("dashTradeTitle");
+  const sub = document.getElementById("dashTradeSub");
+  const qty = document.getElementById("dashTradeQty");
+  const priceRow = document.getElementById("dashTradePriceRow");
+  const price = document.getElementById("dashTradePrice");
+  const helper = document.getElementById("dashTradeHelper");
+  const confirm = document.getElementById("dashTradeConfirm");
+
+  if (!modal || !title || !sub || !qty || !priceRow || !price || !helper || !confirm) return;
+
+  const isBuy = type === "buy";
+  title.textContent = isBuy ? "추가 매수" : "매도";
+  sub.textContent = `${name} (${ticker})`;
+  qty.value = isBuy ? "1" : String(Math.max(1, Math.min(1, _dashTrade.maxQty)));
+  price.value = String(Math.round(_dashTrade.currentPrice || 0));
+  priceRow.style.display = isBuy ? "grid" : "none";
+  helper.textContent = isBuy
+    ? `현재가 기준: ${_dashNum(Math.round(_dashTrade.currentPrice || 0))}원`
+    : `보유 수량: ${_dashNum(_dashTrade.maxQty)}주`;
+  confirm.textContent = isBuy ? "매수 등록" : "매도 실행";
+
+  modal.style.display = "flex";
+  qty.focus();
+}
+
+function closeDashTradeModal() {
+  const modal = document.getElementById("dashTradeModal");
+  if (modal) modal.style.display = "none";
+}
+
+async function confirmDashTrade() {
+  const qty = parseInt(document.getElementById("dashTradeQty")?.value || "0", 10);
+  if (!qty || qty < 1) {
+    showToast("유효한 수량을 입력하세요.", "error");
+    return;
+  }
+
+  const isBuy = _dashTrade.type === "buy";
+  if (!isBuy && qty > _dashTrade.maxQty) {
+    showToast("보유 수량보다 많은 매도는 불가합니다.", "error");
+    return;
+  }
+
+  try {
+    let res;
+    if (isBuy) {
+      const price = parseFloat(document.getElementById("dashTradePrice")?.value || "0");
+      if (!price || price <= 0) {
+        showToast("유효한 매수가를 입력하세요.", "error");
+        return;
+      }
+      res = await fetch("/api/portfolio/buy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticker: _dashTrade.ticker, name: _dashTrade.name, qty, price })
+      }).then(r => r.json());
+    } else {
+      res = await fetch("/api/portfolio/sell", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticker: _dashTrade.ticker, qty })
+      }).then(r => r.json());
+    }
+
+    if (!res.ok) {
+      showToast("오류: " + (res.error || (isBuy ? "매수 실패" : "매도 실패")), "error");
+      return;
+    }
+
+    showToast(`${_dashTrade.name} ${qty}주 ${isBuy ? "추가매수" : "매도"} 완료`);
+    closeDashTradeModal();
+    loadPortfolio();
+  } catch (e) {
+    showToast("오류: " + e.message, "error");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("dashTradeModal")?.addEventListener("click", (e) => {
+    if (e.target?.id === "dashTradeModal") closeDashTradeModal();
+  });
+});
+
 

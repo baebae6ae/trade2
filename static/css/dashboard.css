@@ -261,19 +261,17 @@
   padding: var(--space-md);
   background: var(--newsprint-bg);
   min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
 }
 
 .map-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
+  display: grid;
+  place-items: center;
+  height: 420px;
   color: var(--neutral-600);
   font-size: 0.875rem;
   font-family: var(--font-ui);
+  border: 1px dashed var(--newsprint-grey);
 }
 
 /* ── Heatmap Treemap ────────────────────────– */
@@ -281,6 +279,7 @@
   display: flex;
   gap: var(--space-sm);
   margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
 }
 
 .hm-tab {
@@ -311,6 +310,7 @@
   width: 100%;
   height: 420px;
   overflow: hidden;
+  border: var(--border);
 }
 
 .hm-canvas svg {
@@ -319,12 +319,11 @@
 }
 
 .hm-desc {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
   color: var(--neutral-600);
   margin-bottom: var(--space-md);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  line-height: 1.5;
 }
 
 /* ── 52주 신고가 ────────────────────────────– */
@@ -378,10 +377,7 @@
   }
 }
 
-.h52-cards {
-  display: contents;
-}
-
+.h52-card,
 .high52-card {
   border: var(--border);
   padding: var(--space-lg);
@@ -390,10 +386,16 @@
   cursor: pointer;
 }
 
+.h52-card:hover,
 .high52-card:hover {
   background: var(--neutral-100);
   box-shadow: 4px 4px 0px 0px var(--newsprint-ink);
   transform: translate(-2px, -2px);
+}
+
+.h52-card:focus-visible {
+  outline: 2px solid var(--newsprint-red);
+  outline-offset: 2px;
 }
 
 .h52-top {
@@ -696,6 +698,170 @@
   color: var(--newsprint-bg);
 }
 
+.pt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pt-btn-analyze {
+  border-color: var(--newsprint-ink);
+}
+
+.pt-btn-buy {
+  border-color: var(--bull);
+  color: var(--bull);
+}
+
+.pt-btn-buy:hover {
+  background: var(--bull);
+  color: #fff;
+}
+
+.pt-btn-sell {
+  border-color: var(--bear);
+  color: var(--bear);
+}
+
+.pt-btn-sell:hover {
+  background: var(--bear);
+  color: #fff;
+}
+
+/* ── Dashboard Trade Modal ─────────────────── */
+.dash-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 480;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+
+.dash-modal-box {
+  width: min(560px, 96vw);
+  background: var(--newsprint-bg);
+  border: var(--border-width-heavy) solid var(--newsprint-ink);
+  padding: var(--space-xl);
+}
+
+.dash-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: var(--border);
+}
+
+.dash-modal-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--newsprint-ink);
+}
+
+.dash-modal-sub {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--neutral-600);
+}
+
+.dash-modal-close {
+  width: 32px;
+  height: 32px;
+  border: var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  display: grid;
+  place-items: center;
+}
+
+.dash-modal-close:hover {
+  background: var(--newsprint-ink);
+  color: var(--newsprint-bg);
+}
+
+.dash-modal-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.dash-modal-row label {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--neutral-700);
+}
+
+.dash-modal-row input {
+  border: var(--border);
+  border-bottom: var(--border);
+  padding: 8px 10px;
+  background: var(--newsprint-bg);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.dash-modal-helper {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--neutral-600);
+  white-space: nowrap;
+}
+
+.dash-modal-footer {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: var(--border);
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.dash-btn {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: var(--border);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.dash-btn-cancel {
+  background: var(--newsprint-bg);
+  color: var(--newsprint-ink);
+}
+
+.dash-btn-cancel:hover {
+  background: var(--newsprint-ink);
+  color: var(--newsprint-bg);
+}
+
+.dash-btn-confirm {
+  background: var(--newsprint-red);
+  border-color: var(--newsprint-red);
+  color: #fff;
+}
+
+.dash-btn-confirm:hover {
+  background: transparent;
+  color: var(--newsprint-red);
+}
+
 /* ── Mobile Responsive ────────────────────────– */
 @media (max-width: 767px) {
   .ms-head {
@@ -730,5 +896,17 @@
 
   .ptable-wrap {
     font-size: 0.75rem;
+  }
+
+  .pt-actions {
+    justify-content: flex-start;
+  }
+
+  .dash-modal-box {
+    padding: var(--space-lg);
+  }
+
+  .dash-modal-row {
+    grid-template-columns: 1fr;
   }
 }

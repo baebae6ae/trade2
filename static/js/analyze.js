@@ -247,6 +247,8 @@ let _currentATR    = 0;
 let _currentSetup  = "";
 let _currentHigh20 = 0;
 let _currentEMA20  = 0;
+let _heldQty       = 0;
+let _sellFullMode  = false;
 
 // ── 유틸 ─────────────────────────────────────────────────
 function fmtP(v) {
@@ -298,16 +300,27 @@ function openBuyModal() {
 }
 
 function openSellModal(isFull) {
-  if (isFull) {
-    if (!confirm(`${_currentName} (${_currentTicker})\n전량 매도하시겠습니까?`)) return;
-    submitSell(0);
+  _sellFullMode = !!isFull;
+  if (_heldQty <= 0) {
+    showToast("보유 수량이 없어 매도할 수 없습니다.", "error");
     return;
   }
+
   document.getElementById("modalSellSub").textContent       = `${_currentName} (${_currentTicker})`;
   document.getElementById("modalSellSection").style.display = "";
   document.getElementById("modalBuySection").style.display  = "none";
   document.getElementById("tradeModal").style.display = "flex";
-  document.getElementById("modalSellQty").value = 1;
+  const qtyInput = document.getElementById("modalSellQty");
+  qtyInput.max = _heldQty;
+  qtyInput.value = isFull ? _heldQty : 1;
+  qtyInput.disabled = !!isFull;
+
+  const note = document.getElementById("modalSellModeNote");
+  if (note) {
+    note.textContent = isFull
+      ? `전량 매도 모드 · 보유 ${_heldQty.toLocaleString("ko-KR")}주 전부 매도`
+      : `부분 매도 모드 · 보유 ${_heldQty.toLocaleString("ko-KR")}주 중 일부 매도`;
+  }
   document.getElementById("modalSellQty").focus();
 }
 
@@ -334,7 +347,12 @@ async function confirmBuy() {
 
 async function confirmSell() {
   const qty = parseInt(document.getElementById("modalSellQty").value);
+  if (_sellFullMode) {
+    submitSell(0);
+    return;
+  }
   if (!qty || qty < 1) { alert("매도 수량을 입력하세요."); return; }
+  if (qty > _heldQty) { alert("보유 수량보다 많은 매도는 불가합니다."); return; }
   submitSell(qty);
 }
 
@@ -463,7 +481,9 @@ async function loadAnalysis(ticker) {
 
     // 보유 중 배지 (비동기 — 분석 렌더링 차단하지 않음)
     fetch("/api/portfolio").then(r => r.json()).then(pf => {
-      const held = pf.ok && pf.positions?.some(p => p.ticker === _currentTicker);
+      const pos = pf.ok ? (pf.positions || []).find(p => p.ticker === _currentTicker) : null;
+      const held = !!pos;
+      _heldQty = pos ? Number(pos.quantity || 0) : 0;
       document.getElementById("holdingBadge").style.display = held ? "inline-block" : "none";
     }).catch(() => {});
 

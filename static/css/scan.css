@@ -427,9 +427,55 @@
 
 .det-comp-desc {
   font-family: var(--font-body);
-  font-size: 0.8rem;
+  font-size: 0.92rem;
   color: var(--neutral-700);
-  line-height: 1.5;
+  line-height: 1.65;
+}
+
+.det-setup-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-sm);
+}
+
+.det-setup-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--newsprint-grey);
+  background: var(--newsprint-bg);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--neutral-700);
+  letter-spacing: 0.02em;
+}
+
+.det-setup-chip.best {
+  border-color: var(--newsprint-red);
+  color: var(--newsprint-red);
+  background: rgba(204, 0, 0, 0.08);
+}
+
+.det-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--newsprint-grey);
+}
+
+.det-metrics span {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid var(--newsprint-grey);
+  background: var(--newsprint-bg);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--neutral-700);
 }
 
 /* ── Modal Overlay ─────────────────────────────– */
@@ -452,7 +498,8 @@
   background: var(--newsprint-bg);
   border: var(--border-width-heavy) solid var(--newsprint-ink);
   padding: var(--space-xl);
-  max-width: 90vw;
+  width: min(960px, 96vw);
+  max-width: 96vw;
   max-height: 90vh;
   overflow: auto;
   position: relative;
@@ -520,6 +567,218 @@
   color: var(--newsprint-bg);
 }
 
+.cmo-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+}
+
+.cmo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.cmo-chart-img {
+  width: 100%;
+  border: var(--border);
+  background: #fff;
+  margin-bottom: var(--space-md);
+}
+
+.cmo-summary {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--newsprint-ink);
+}
+
+.cmo-summary2 {
+  margin-top: var(--space-sm);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--neutral-700);
+}
+
+/* ── Buy Modal (Scan) ─────────────────────────── */
+.modal-box {
+  background: var(--newsprint-bg);
+  border: var(--border-width-heavy) solid var(--newsprint-ink);
+  padding: var(--space-xl);
+  width: min(720px, 96vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.modal-box-wide {
+  width: min(760px, 96vw);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: var(--border);
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--newsprint-ink);
+}
+
+.modal-scenario-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mbuy-qty-row,
+.mbuy-price-row {
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.mbuy-qty-label,
+.mbuy-price-label {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--neutral-700);
+}
+
+.mbuy-qty-input,
+.mbuy-price-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: var(--border);
+  border-bottom: var(--border);
+  background: var(--newsprint-bg);
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  color: var(--newsprint-ink);
+}
+
+.mbuy-invest,
+.mbuy-price-sub {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--neutral-600);
+  white-space: nowrap;
+}
+
+.mbuy-trailing-preview {
+  margin-top: var(--space-md);
+  border: var(--border);
+  background: var(--neutral-100);
+  padding: var(--space-md);
+}
+
+.mbuy-trailing-label {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+  color: var(--newsprint-ink);
+}
+
+.mbuy-trailing-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.mbuy-trailing-item {
+  border: 1px solid var(--newsprint-grey);
+  background: var(--newsprint-bg);
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.mbuy-trailing-key {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--neutral-600);
+}
+
+.mbuy-trailing-val,
+.mbuy-trailing-pct,
+.mbuy-trailing-signal {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--newsprint-ink);
+}
+
+.mbuy-trailing-desc {
+  margin-top: 8px;
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  color: var(--neutral-700);
+  line-height: 1.5;
+}
+
+.btn-cancel,
+.btn-confirm {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: var(--border);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.btn-cancel {
+  background: var(--newsprint-bg);
+  color: var(--newsprint-ink);
+}
+
+.btn-cancel:hover {
+  background: var(--newsprint-ink);
+  color: var(--newsprint-bg);
+}
+
+.btn-confirm {
+  background: var(--newsprint-red);
+  border-color: var(--newsprint-red);
+  color: #fff;
+}
+
+.btn-confirm:hover {
+  background: transparent;
+  color: var(--newsprint-red);
+}
+
 /* ── Empty State ───────────────────────────────– */
 .no-result {
   text-align: center;
@@ -563,5 +822,14 @@
 
   .chart-modal-box {
     padding: var(--space-lg);
+  }
+
+  .mbuy-qty-row,
+  .mbuy-price-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mbuy-trailing-main {
+    grid-template-columns: 1fr;
   }
 }

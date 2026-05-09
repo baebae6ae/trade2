@@ -44,15 +44,15 @@ def _setup_korean_font():
 _setup_korean_font()
 matplotlib.rcParams["axes.unicode_minus"] = False
 
-BG       = "#131722"
-BG2      = "#1E222D"
-BG3      = "#1A1E2E"
-GRID     = "#2A2E39"
-TEXT     = "#B2B5BE"
-BULL     = "#FF4444"
-BEAR     = "#2196F3"
-BULL_T   = "#E5393580"
-BEAR_T   = "#1E88E580"
+BG       = "#F9F9F7"
+BG2      = "#F1F1ED"
+BG3      = "#F6F6F2"
+GRID     = "#D8D8D2"
+TEXT     = "#303030"
+BULL     = "#0D7F3C"
+BEAR     = "#C41D3A"
+BULL_T   = "#0D7F3C80"
+BEAR_T   = "#C41D3A80"
 
 
 def _fig_to_b64(fig) -> str:
@@ -92,7 +92,7 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
         4, 1,
         height_ratios=[5, 1, 1, 1],
         hspace=0.04,
-        left=0.04, right=0.86,
+        left=0.045, right=0.985,
         top=0.96, bottom=0.05
     )
     ax_c = fig.add_subplot(gs[0])
@@ -102,11 +102,11 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
 
     for ax in [ax_c, ax_v, ax_m, ax_f]:
         ax.set_facecolor(BG)
-        ax.tick_params(colors=TEXT, labelsize=7.5)
+        ax.tick_params(colors=TEXT, labelsize=9)
         for sp in ax.spines.values():
             sp.set_edgecolor(GRID)
         ax.yaxis.tick_right()
-        ax.grid(axis="y", color=GRID, lw=0.4, alpha=0.6)
+        ax.grid(axis="y", color=GRID, lw=0.6, alpha=0.9)
 
     # ── 캔들 ──
     for i, (_, row) in enumerate(df.iterrows()):
@@ -163,7 +163,7 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
     ax_c.set_xlim(-1, n + 1)
     ax_c.legend(loc="upper left", fontsize=6.5,
                 facecolor=BG2, edgecolor=GRID,
-                labelcolor="white", ncol=8, framealpha=0.8)
+                labelcolor="#222222", ncol=8, framealpha=0.9)
 
     # ── 거래량 ──
     for i, (_, row) in enumerate(df.iterrows()):
@@ -171,7 +171,7 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
         ax_v.bar(i, row["Volume"], color=color, width=0.7)
     if "Vol20" in df.columns:
         ax_v.plot(xs, df["Vol20"].values, color=TEXT, lw=0.8)
-    ax_v.set_ylabel("거래량", color=TEXT, fontsize=6.5)
+    ax_v.set_ylabel("거래량", color=TEXT, fontsize=8)
     ax_v.yaxis.set_ticklabels([])
 
     # ── MACD ──
@@ -184,8 +184,8 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
         ax_m.axhline(0, color=GRID, lw=0.6)
         ax_m.legend(loc="upper left", fontsize=6,
                     facecolor=BG2, edgecolor=GRID,
-                    labelcolor="white", ncol=2, framealpha=0.8)
-    ax_m.set_ylabel("MACD", color=TEXT, fontsize=6.5)
+                    labelcolor="#222222", ncol=2, framealpha=0.9)
+    ax_m.set_ylabel("MACD", color=TEXT, fontsize=8)
 
     # ── FIS 히스토그램 ──
     fis_vals = df["FIS"].values
@@ -195,94 +195,32 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
     ax_f.axhline(40,  color=BULL, lw=0.4, ls="--", alpha=0.5)
     ax_f.axhline(-40, color=BEAR, lw=0.4, ls="--", alpha=0.5)
     ax_f.set_ylim(-100, 100)
-    ax_f.set_ylabel("FIS", color=TEXT, fontsize=6.5)
+    ax_f.set_ylabel("FIS", color=TEXT, fontsize=8)
 
     # X축 날짜
     step      = max(1, n // 12)
     tick_pos  = list(range(0, n, step))
     tick_labs = [df.index[i].strftime(date_fmt) for i in tick_pos]
     ax_f.set_xticks(tick_pos)
-    ax_f.set_xticklabels(tick_labs, color=TEXT, fontsize=7.5, rotation=15)
+    ax_f.set_xticklabels(tick_labs, color=TEXT, fontsize=9, rotation=15)
     for ax in [ax_c, ax_v, ax_m]:
         plt.setp(ax.get_xticklabels(), visible=False)
 
-    # ── CFIE 판단 오버레이 (우측) ──
-    fis      = judgment["fis"]
-    lcolor   = judgment["label_color"]
-    label    = judgment["label"]
-    sl1      = judgment["summary_l1"]
-    sl2      = judgment["summary_l2"]
-
-    # 헤더 박스
-    bx, by, bw, bh = 0.865, 0.965, 0.132, 0.028
-    hax = fig.add_axes([bx, by, bw, bh])
-    hax.set_facecolor(BG2); hax.axis("off")
-    hax.text(0.04, 0.5, "CFIE v3.7", va="center", ha="left",
-             color=TEXT, fontsize=8, fontweight="bold",
-             transform=hax.transAxes)
-    hax.text(0.5, 0.5, "한문장 판단", va="center", ha="center",
-             color="white", fontsize=9, fontweight="bold",
-             transform=hax.transAxes)
-    hax.text(0.97, 0.5, f"FIS {fis:+.0f}", va="center", ha="right",
-             color=lcolor, fontsize=8.5, fontweight="bold",
-             transform=hax.transAxes)
-
-    # 요약 본문 박스
-    body_h = 0.20
-    bax = fig.add_axes([bx, by - body_h, bw, body_h])
-    bax.set_facecolor(BG3); bax.axis("off")
-
-    chip = FancyBboxPatch(
-        (0.02, 0.66), 0.96, 0.28,
-        boxstyle="round,pad=0.01",
-        facecolor=lcolor, edgecolor="none",
-        transform=bax.transAxes
-    )
-    bax.add_patch(chip)
-    bax.text(0.5, 0.80, label, va="center", ha="center",
-             color="white", fontsize=9.5, fontweight="bold",
-             transform=bax.transAxes)
-
-    # 요약 텍스트 (줄 자동 분리)
-    def wrap_text(ax, text, y, fs=7.2):
-        ax.text(0.03, y, text, va="top", ha="left",
-                color="#E0E3EB", fontsize=fs,
-                transform=ax.transAxes,
-                wrap=True,
-                multialignment="left")
-
-    wrap_text(bax, sl1, 0.62)
-    wrap_text(bax, sl2, 0.34)
-
-    # 세부 점수 바 (하단 박스)
-    scores   = judgment["scores"]
-    keys     = list(scores.keys())
-    vals     = [scores[k] for k in keys]
-    bar_clrs = [BULL if v >= 0 else BEAR for v in vals]
-
-    score_h = 0.14
-    sax = fig.add_axes([bx, by - body_h - score_h - 0.01, bw, score_h])
-    sax.set_facecolor(BG3)
-    sax.barh(keys, vals, color=bar_clrs, height=0.6)
-    sax.axvline(0, color=TEXT, lw=0.6)
-    sax.set_xlim(-32, 32)
-    sax.tick_params(colors=TEXT, labelsize=7)
-    for sp in sax.spines.values():
-        sp.set_visible(False)
-    sax.yaxis.tick_left()
-    sax.set_facecolor(BG3)
+    # 우측 오버레이는 제거하고 사이드바 판단 패널을 사용한다.
 
     # 종목명 + 현재가 + 첫인상 레이블
     last_close = float(df_fis.iloc[-1]["Close"])
+    label = judgment["label"]
+    lcolor = judgment["label_color"]
     ax_c.text(0.01, 0.98, label,
               transform=ax_c.transAxes,
               va="top", ha="left",
-              color=lcolor, fontsize=12, fontweight="bold",
+              color=lcolor, fontsize=13, fontweight="bold",
               bbox=dict(facecolor=BG, edgecolor="none", alpha=0.75, pad=2))
     ax_c.text(0.01, 0.90, f"{ticker} [{timeframe_label}]  {last_close:,.2f}",
               transform=ax_c.transAxes,
               va="top", ha="left",
-              color=TEXT, fontsize=9.5,
+              color=TEXT, fontsize=10.5,
               bbox=dict(facecolor=BG, edgecolor="none", alpha=0.6, pad=2))
 
     b64 = _fig_to_b64(fig)
