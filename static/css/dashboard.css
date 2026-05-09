@@ -19,7 +19,7 @@
 .index-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-  border-color: var(--text3);
+  border-color: var(--text2);
 }
 .index-card::before {
   content: "";
@@ -40,8 +40,8 @@
 .ic-change { font-size: 12px; font-weight: 700; }
 .ic-change.bull { color: var(--bull); }
 .ic-change.bear { color: var(--bear); }
-.ic-change.flat { color: var(--text3); }
-.ic-abs    { font-size: 11px; color: var(--text3); }
+.ic-change.flat { color: var(--text2); }
+.ic-abs    { font-size: 11px; color: var(--text2); }
 
 /* ── 포트폴리오 섹션 ─────────────────────────── */
 .portfolio-wrap {
@@ -61,7 +61,7 @@
   border-right: 1px solid var(--border);
 }
 .ps-item:last-child { border-right: none; }
-.ps-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+.ps-label { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
 .ps-value { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
 .ps-value.bull { color: var(--bull); }
 .ps-value.bear { color: var(--bear); }
@@ -72,7 +72,7 @@
 .portfolio-table th {
   padding: 10px 16px;
   background: var(--bg);
-  color: var(--text3);
+  color: var(--text2);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -92,7 +92,7 @@
 .portfolio-table td:first-child { text-align: left; }
 .portfolio-table tr:hover td { background: rgba(255,255,255,0.025); }
 .pt-name { font-weight: 700; font-size: 14px; }
-.pt-ticker { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.pt-ticker { font-size: 11px; color: var(--text2); margin-top: 1px; }
 .pt-bull { color: var(--bull); font-weight: 700; }
 .pt-bear { color: var(--bear); font-weight: 700; }
 .pt-btn {
@@ -121,7 +121,7 @@
 }
 .empty-portfolio .ep-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
 .empty-portfolio .ep-title { font-size: 15px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
-.empty-portfolio .ep-sub   { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
+.empty-portfolio .ep-sub   { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
 .ep-scan-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 10px 20px;
@@ -150,10 +150,10 @@
   transition: transform 0.15s, border-color 0.2s;
   overflow: hidden;
 }
-.wl-card:hover { transform: translateY(-2px); border-color: var(--text3); }
+.wl-card:hover { transform: translateY(-2px); border-color: var(--text2); }
 .wl-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
 .wl-name   { font-size: 13px; font-weight: 700; }
-.wl-ticker { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.wl-ticker { font-size: 11px; color: var(--text2); margin-top: 2px; }
 .wl-fis-badge {
   font-size: 10px; font-weight: 800;
   padding: 3px 8px; border-radius: 20px;
@@ -161,3 +161,4 @@
 }
 .wl-chart { width: 100%; margin: 8px 0; }
 .wl-chart img { width: 100%; height: auto; display: block; border-radius: 4px; }
+

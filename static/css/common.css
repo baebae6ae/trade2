@@ -1,27 +1,28 @@
-﻿/* static/css/common.css — 공통 기반 스타일 */
+﻿@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap');
+/* static/css/common.css — 공통 기반 스타일 */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
   --bg:      #0D1117;
   --bg2:     #161B22;
-  --bg3:     #21262D;
-  --border:  #30363D;
-  --border2: rgba(255,255,255,0.05);
+  --bg3:     #252C35;
+  --border:  #424A54;
+  --border2: rgba(255,255,255,0.08);
   --bull:    #E53935;
   --bear:    #1565C0;
   --accent:  #7C6FF7;
   --gold:    #F0B429;
   --text1:   #E6EDF3;
-  --text2:   #A0AAB8;
-  --text3:   #7A8490;
+  --text2:   #C2CDD8;
+  --text3:   #9AAAB8;
   --radius:  10px;
   --shadow:  0 4px 24px rgba(0,0,0,0.4);
 }
 
 html { font-size: 14px; }
 body {
-  font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-family: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   background: var(--bg);
   color: var(--text1);
   min-height: 100vh;
@@ -357,3 +358,4 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   background: var(--bg2);
   margin-top: auto;
 }
+

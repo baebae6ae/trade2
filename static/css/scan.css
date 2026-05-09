@@ -6,7 +6,7 @@
   margin-bottom: 28px;
 }
 .scan-hero h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
-.scan-hero p  { font-size: 14px; color: var(--text2); }
+.scan-hero p  { font-size: 14px; color: var(--text1); }
 
 /* 탭 */
 .market-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
@@ -14,7 +14,7 @@
   padding: 8px 20px;
   border-radius: 8px;
   font-size: 13px; font-weight: 700;
-  color: var(--text2);
+  color: var(--text1);
   background: var(--bg2);
   border: 1px solid var(--border);
   transition: all 0.15s;
@@ -49,7 +49,7 @@
   font-size: 12px; font-weight: 700;
   padding: 3px 10px; border-radius: 20px;
 }
-.result-note { font-size: 12px; color: var(--text3); }
+.result-note { font-size: 12px; color: var(--text2); }
 
 /* 후보 그리드 */
 .candidates-grid {
@@ -329,3 +329,4 @@
 .mbuy-trailing-pct    { font-size: 12px; color: #c62828; }
 .mbuy-trailing-signal { font-size: 11px; color: var(--text2); }
 .mbuy-trailing-desc   { font-size: 10px; color: var(--text3); margin-top: 8px; }
+
