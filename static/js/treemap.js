@@ -17,7 +17,7 @@ function _squarify(items, x, y, w, h, total) {
     return [{ item: items[0], x, y, w, h }];
   }
 
-  const area = w * h;
+  let area = w * h;
   const rects = [];
   let remaining = [...items];
 
@@ -280,3 +280,4 @@ function _renderStockMap(container, data, cw, ch) {
   }
   container.appendChild(svg);
 }
+
