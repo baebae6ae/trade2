@@ -91,16 +91,16 @@
         }
       ]
     },
-    "006880.KS": {
-      "name": "Singsong Holdings Co.,Ltd.",
-      "quantity": 100,
-      "avg_price": 7170.0,
-      "max_trailing_stop": 7167.1429,
+    "007540.KS": {
+      "name": "Sempio Company",
+      "quantity": 6,
+      "avg_price": 59000.0,
+      "max_trailing_stop": 53164.2857,
       "buys": [
         {
-          "date": "2026-05-09 17:47",
-          "qty": 100,
-          "price": 7170.0
+          "date": "2026-05-09 17:49",
+          "qty": 6,
+          "price": 59000.0
         }
       ]
     }
