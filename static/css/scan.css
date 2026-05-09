@@ -314,3 +314,92 @@
   .cc-actions { flex-wrap: wrap; }
   .cc-action-btn { min-width: 80px; }
 }
+
+/* ── 상세 설명 (FIS Detail) ──────────────────── */
+.det-toggle {
+  display: block; width: 100%; margin-top: 12px;
+  padding: 7px 12px; border-radius: 7px;
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  background: var(--bg3); border: 1px solid var(--border);
+  text-align: left; cursor: pointer; transition: all 0.15s;
+  box-shadow: var(--nm-btn);
+}
+.det-toggle:hover { color: var(--text1); background: var(--bg4); box-shadow: var(--nm-raised-sm); }
+
+.det-body {
+  display: none;
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: rgba(0,0,0,0.18);
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  box-shadow: var(--nm-inset);
+}
+
+.det-comp {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border2);
+}
+.det-comp:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+.det-comp-hd {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 4px;
+}
+.det-comp-label {
+  font-size: 11px; font-weight: 800; color: var(--text2);
+  letter-spacing: 0.2px;
+}
+.det-comp-score {
+  font-size: 11px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.det-comp-desc {
+  font-size: 11px; color: var(--text3); line-height: 1.55;
+}
+
+.det-setup-chips {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+}
+.det-setup-chip {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 5px;
+  background: var(--bg4); color: var(--text3);
+  border: 1px solid var(--border);
+}
+.det-setup-chip.best {
+  color: var(--accent); background: var(--accent-bg);
+  border-color: rgba(129,140,248,0.3);
+}
+
+.det-metrics {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
+  padding-top: 8px; border-top: 1px solid var(--border2);
+}
+.det-metrics span {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 5px;
+  background: var(--bg3); color: var(--text3);
+  border: 1px solid var(--border2);
+}
+
+/* ── cc-btn (스캔 카드 액션 버튼) ─────────────── */
+.cc-btn {
+  flex: 1; padding: 7px; border-radius: 7px;
+  font-size: 12px; font-weight: 700;
+  text-align: center; cursor: pointer;
+  transition: all 0.18s; border: 1px solid transparent;
+  box-shadow: var(--nm-btn);
+}
+.cc-btn:hover { box-shadow: var(--nm-raised-sm); }
+.cc-btn-analyze {
+  background: rgba(129,140,248,0.1); color: var(--accent);
+  border-color: rgba(129,140,248,0.2);
+}
+.cc-btn-analyze:hover { background: rgba(129,140,248,0.2); }
+.cc-btn-buy {
+  background: linear-gradient(135deg, rgba(129,140,248,0.2) 0%, rgba(99,102,241,0.2) 100%);
+  color: var(--accent); border-color: rgba(129,140,248,0.3);
+}
+.cc-btn-buy:hover { background: rgba(129,140,248,0.3); }
