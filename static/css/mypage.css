@@ -1,44 +1,60 @@
 ﻿/* ═══════════════════════════════════════════════
-   MyPage — Newsprint Style
+   MyPage — Newsprint Style (Revised)
 ═══════════════════════════════════════════════ */
 
-/* ── Page Title ────────────────────────────────– */
-.mypage-header {
+/* ── Page Title & Description ──────────────────– */
+.mypage-hero {
   margin-bottom: var(--space-2xl);
+  text-align: center;
   border-bottom: var(--border-width-heavy) solid var(--newsprint-ink);
-  padding-bottom: var(--space-lg);
+  padding-bottom: var(--space-xl);
 }
 
-.mypage-title {
+.mypage-hero h1 {
   font-family: var(--font-display);
   font-size: clamp(1.75rem, 8vw, 3rem);
   font-weight: 900;
   color: var(--newsprint-ink);
   text-transform: uppercase;
   letter-spacing: -0.02em;
+  margin-bottom: var(--space-md);
 }
 
-/* ── Cards Grid ────────────────────────────────– */
-.mp-cards {
+.mypage-hero p {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--neutral-700);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ── Summary Cards Grid ────────────────────────– */
+.mp-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-lg);
   margin-bottom: var(--space-2xl);
 }
 
-@media (max-width: 767px) {
-  .mp-cards {
+@media (max-width: 1024px) {
+  .mp-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .mp-summary {
     grid-template-columns: 1fr;
   }
 }
 
-/* ── Card ──────────────────────────────────– */
+/* ── Summary Card ──────────────────────────────– */
 .mp-card {
   border: var(--border);
   background: var(--newsprint-bg);
   padding: var(--space-lg);
+  text-align: center;
   transition: all 200ms;
-  cursor: pointer;
 }
 
 .mp-card:hover {
@@ -47,23 +63,21 @@
   transform: translate(-2px, -2px);
 }
 
-.mp-card-title {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--newsprint-ink);
-  margin-bottom: var(--space-md);
+.mp-card-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.1em;
+  color: var(--neutral-600);
+  margin-bottom: var(--space-md);
 }
 
 .mp-card-value {
   font-family: var(--font-mono);
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 900;
   color: var(--newsprint-ink);
-  margin-bottom: var(--space-sm);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
 .mp-card-value.bull {
@@ -74,28 +88,20 @@
   color: var(--bear);
 }
 
-.mp-card-label {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--neutral-600);
-}
-
-/* ── Analysis Section ────────────────────────– */
+/* ── Analysis Section ──────────────────────────– */
 .mp-analysis {
   border: var(--border);
   background: var(--newsprint-bg);
   margin-bottom: var(--space-2xl);
+  overflow: hidden;
 }
 
 .mp-analysis-head {
   background: var(--newsprint-ink);
   color: var(--newsprint-bg);
   padding: var(--space-lg) var(--space-xl);
-  border-bottom: var(--border);
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: -0.01em;
@@ -107,11 +113,11 @@
 
 .mp-analysis-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: var(--space-lg);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .mp-analysis-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -132,7 +138,7 @@
 
 .mp-analysis-card-title {
   font-family: var(--font-ui);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -142,31 +148,69 @@
 
 .mp-analysis-card-value {
   font-family: var(--font-mono);
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 900;
   color: var(--newsprint-ink);
   letter-spacing: -0.02em;
+  margin-bottom: var(--space-xs);
 }
 
 .mp-analysis-card-unit {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--neutral-600);
-  margin-top: var(--space-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* ── Table ─────────────────────────────────– */
+/* ── Table Wrapper ─────────────────────────────– */
 .mp-table-wrap {
   border: var(--border);
   background: var(--newsprint-bg);
-  overflow-x: auto;
   margin-bottom: var(--space-2xl);
+  overflow-x: auto;
 }
 
+.mp-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: var(--border-width-heavy) solid var(--newsprint-ink);
+  background: var(--newsprint-bg);
+}
+
+.mp-table-title {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--newsprint-ink);
+  text-transform: uppercase;
+}
+
+.mp-refresh-btn {
+  width: 40px;
+  height: 40px;
+  border: var(--border);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 200ms;
+}
+
+.mp-refresh-btn:hover {
+  background: var(--newsprint-ink);
+  color: var(--newsprint-bg);
+}
+
+/* ── Table ─────────────────────────────────────– */
 .mp-table {
   width: 100%;
   border-collapse: collapse;
-  border: var(--border);
+  font-size: 0.875rem;
 }
 
 .mp-table th {
@@ -174,7 +218,7 @@
   color: var(--newsprint-bg);
   padding: var(--space-md) var(--space-lg);
   font-family: var(--font-ui);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-align: left;
   text-transform: uppercase;
@@ -188,10 +232,9 @@
 }
 
 .mp-table td {
-  padding: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
   border-bottom: 1px solid var(--newsprint-grey);
   font-family: var(--font-ui);
-  font-size: 0.875rem;
   color: var(--newsprint-ink);
 }
 
@@ -202,12 +245,18 @@
 .mp-table-rank {
   font-family: var(--font-mono);
   font-weight: 700;
-  color: var(--newsprint-ink);
 }
 
 .mp-table-name {
   font-family: var(--font-display);
   font-weight: 700;
+}
+
+.mp-table-ticker {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--neutral-600);
+  margin-top: 2px;
 }
 
 .mp-table-price {
@@ -228,21 +277,18 @@
   color: var(--bear);
 }
 
-.mp-table-action {
-  text-align: center;
-}
-
 .mp-table-btn {
-  padding: 6px 12px;
+  padding: 6px 10px;
   border: var(--border);
   background: transparent;
   font-family: var(--font-ui);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   cursor: pointer;
   transition: all 200ms;
+  margin-right: -1px;
 }
 
 .mp-table-btn:hover {
@@ -250,12 +296,17 @@
   color: var(--newsprint-bg);
 }
 
-/* ── Empty State ────────────────────────────– */
+.mp-table-btn:last-child {
+  margin-right: 0;
+}
+
+/* ── Empty State ───────────────────────────────– */
 .mp-empty {
   border: var(--border);
   padding: var(--space-3xl) var(--space-lg);
   text-align: center;
   color: var(--neutral-600);
+  background: var(--neutral-100);
 }
 
 .mp-empty-icon {
@@ -265,10 +316,10 @@
 
 .mp-empty-title {
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  margin-bottom: var(--space-md);
   color: var(--newsprint-ink);
+  margin-bottom: var(--space-md);
 }
 
 .mp-empty-text {
@@ -277,8 +328,8 @@
   line-height: 1.6;
 }
 
-/* ── Modal/Popup ────────────────────────────– */
-.modal-backdrop {
+/* ── Modal Overlay ─────────────────────────────– */
+.modal-overlay {
   display: none;
   position: fixed;
   inset: 0;
@@ -289,14 +340,14 @@
   padding: var(--space-lg);
 }
 
-.modal-backdrop.open {
+.modal-overlay.open {
   display: flex;
 }
 
-.modal-content {
+.modal-box {
   background: var(--newsprint-bg);
   border: var(--border-width-heavy) solid var(--newsprint-ink);
-  padding: var(--space-2xl);
+  padding: var(--space-xl);
   max-width: 500px;
   width: 100%;
   position: relative;
@@ -304,49 +355,117 @@
   overflow: auto;
 }
 
-.modal-close {
-  position: absolute;
-  top: var(--space-lg);
-  right: var(--space-lg);
-  width: 36px;
-  height: 36px;
-  border: var(--border);
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1.5rem;
-  font-weight: 700;
-  transition: all 200ms;
+.modal-box-wide {
+  max-width: 700px;
 }
 
-.modal-close:hover {
-  background: var(--newsprint-ink);
-  color: var(--newsprint-bg);
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-lg);
+  border-bottom: var(--border);
 }
 
 .modal-title {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 800;
-  margin-bottom: var(--space-lg);
-  padding-bottom: var(--space-lg);
-  border-bottom: var(--border);
+  color: var(--newsprint-ink);
   text-transform: uppercase;
   letter-spacing: -0.01em;
 }
 
-.modal-body {
+.modal-sub {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--neutral-600);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Modal Form ────────────────────────────────– */
+.form-row {
+  display: flex;
+  flex-direction: column;
   margin-bottom: var(--space-lg);
 }
 
-.modal-body p {
-  font-family: var(--font-body);
-  line-height: 1.75;
-  margin-bottom: var(--space-md);
+.form-row label {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+  color: var(--newsprint-ink);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
+.modal-input {
+  padding: 8px 12px;
+  border: var(--border);
+  background: var(--newsprint-bg);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--newsprint-ink);
+  transition: all 200ms;
+}
+
+.modal-input:focus {
+  outline: none;
+  background: var(--neutral-100);
+  border-color: var(--newsprint-ink);
+}
+
+/* ── Modal Scenario & Trailing ─────────────────– */
+.modal-scenario-chip {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  background: var(--newsprint-red);
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mbuy-qty-row, .mbuy-price-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.mbuy-qty-label, .mbuy-price-label {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  min-width: 80px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--newsprint-ink);
+}
+
+.mbuy-qty-input, .mbuy-price-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: var(--border);
+  background: var(--newsprint-bg);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--newsprint-ink);
+}
+
+.mbuy-invest, .mbuy-price-sub {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--neutral-600);
+  white-space: nowrap;
+}
+
+/* ── Modal Footer ──────────────────────────────– */
 .modal-footer {
   display: flex;
   gap: var(--space-md);
@@ -354,14 +473,60 @@
   padding-top: var(--space-lg);
 }
 
-/* ── Mobile Responsive ────────────────────────– */
-@media (max-width: 767px) {
-  .mypage-title {
+.btn-cancel, .btn-confirm {
+  flex: 1;
+  padding: 10px 14px;
+  border: var(--border);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.btn-cancel {
+  background: transparent;
+  color: var(--newsprint-ink);
+}
+
+.btn-cancel:hover {
+  background: var(--newsprint-ink);
+  color: var(--newsprint-bg);
+}
+
+.btn-confirm {
+  background: var(--newsprint-ink);
+  color: var(--newsprint-bg);
+  border-color: var(--newsprint-ink);
+}
+
+.btn-confirm:hover {
+  background: transparent;
+  color: var(--newsprint-ink);
+}
+
+.btn-part-sell, .btn-full-sell {
+  background: transparent;
+  color: var(--newsprint-ink);
+  border-color: var(--newsprint-ink);
+}
+
+.btn-full-sell {
+  background: var(--newsprint-red);
+  color: white;
+  border-color: var(--newsprint-red);
+}
+
+/* ── Mobile Responsive ──────────────────────────– */
+@media (max-width: 768px) {
+  .mypage-hero h1 {
     font-size: 1.5rem;
   }
 
-  .mp-cards {
-    gap: var(--space-md);
+  .mp-summary {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .mp-table {
@@ -369,20 +534,42 @@
   }
 
   .mp-table th, .mp-table td {
-    padding: var(--space-md);
+    padding: var(--space-sm);
   }
 
-  .modal-content {
+  .modal-box {
     padding: var(--space-lg);
+  }
+
+  .modal-footer {
+    flex-direction: column;
   }
 }
 
 @media (max-width: 480px) {
+  .mp-summary {
+    grid-template-columns: 1fr;
+  }
+
   .mp-analysis-grid {
     grid-template-columns: 1fr;
   }
 
-  .modal-content {
+  .mp-table-wrap {
+    overflow-x: scroll;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-box, .modal-box-wide {
     width: 100%;
+    max-width: 100%;
+  }
+
+  .mbuy-qty-row, .mbuy-price-row {
+    flex-direction: column;
+  }
+
+  .mbuy-qty-label, .mbuy-price-label {
+    min-width: auto;
   }
 }

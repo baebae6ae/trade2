@@ -372,6 +372,16 @@
   }
 }
 
+@media (max-width: 480px) {
+  .high52-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.h52-cards {
+  display: contents;
+}
+
 .high52-card {
   border: var(--border);
   padding: var(--space-lg);
@@ -386,12 +396,22 @@
   transform: translate(-2px, -2px);
 }
 
-.h52-title {
+.h52-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--newsprint-grey);
+  gap: var(--space-md);
+}
+
+.h52-name {
   font-family: var(--font-display);
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--newsprint-ink);
-  margin-bottom: var(--space-sm);
+  margin-bottom: var(--space-xs);
 }
 
 .h52-ticker {
@@ -400,40 +420,51 @@
   color: var(--neutral-600);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: var(--space-md);
-  padding-bottom: var(--space-md);
-  border-bottom: 1px solid var(--newsprint-grey);
+}
+
+.h52-streak {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border: 1px solid;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .h52-price {
   font-family: var(--font-mono);
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: 1.25rem;
+  font-weight: 900;
   color: var(--newsprint-ink);
-  margin-bottom: var(--space-sm);
-}
-
-.h52-pct {
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  font-weight: 700;
   margin-bottom: var(--space-md);
 }
 
-.h52-pct.bull {
-  color: var(--bull);
+.h52-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
-.h52-pct.bear {
-  color: var(--bear);
+.h52-meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
 }
 
-.h52-days {
-  font-family: var(--font-ui);
-  font-size: 0.75rem;
-  color: var(--neutral-600);
+.h52-meta-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  color: var(--neutral-600);
+  letter-spacing: 0.1em;
+}
+
+.h52-meta-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--newsprint-ink);
 }
 
 .high52-loading, .high52-empty {
@@ -588,7 +619,81 @@
   font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 600;
+  color: var(--newsprint-ink);
+}
+
+.ep-sub {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
   color: var(--neutral-600);
+  margin-bottom: var(--space-lg);
+}
+
+.ep-scan-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  border: var(--border);
+  background: transparent;
+  color: var(--newsprint-ink);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.ep-scan-btn:hover {
+  background: var(--newsprint-ink);
+  color: var(--newsprint-bg);
+}
+
+/* ── Portfolio Table Wrapper & Rows ────────– */
+.ptable-wrap {
+  overflow-x: auto;
+  margin-top: var(--space-xl);
+}
+
+.pt-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--newsprint-ink);
+}
+
+.pt-ticker {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--neutral-600);
+  margin-top: 2px;
+}
+
+.pt-bull {
+  color: var(--bull);
+}
+
+.pt-bear {
+  color: var(--bear);
+}
+
+.pt-btn {
+  padding: 6px 10px;
+  border: var(--border);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--newsprint-ink);
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.pt-btn:hover {
+  background: var(--newsprint-ink);
+  color: var(--newsprint-bg);
 }
 
 /* ── Mobile Responsive ────────────────────────– */
@@ -613,5 +718,17 @@
 
   .ms-title {
     font-size: 1.25rem;
+  }
+
+  .portfolio-table {
+    font-size: 0.8rem;
+  }
+
+  .portfolio-table th, .portfolio-table td {
+    padding: var(--space-sm);
+  }
+
+  .ptable-wrap {
+    font-size: 0.75rem;
   }
 }
