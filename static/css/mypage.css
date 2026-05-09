@@ -287,33 +287,34 @@
    Glassmorphism — Mypage
 ═══════════════════════════════════════════════ */
 .mp-card {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border2) !important;
-  backdrop-filter: var(--glass-blur-sm);
-  -webkit-backdrop-filter: var(--glass-blur-sm);
+  background: rgba(12,18,32,0.50) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
   box-shadow: var(--glass-shadow-sm);
 }
 .mp-card:hover {
-  background: var(--glass-bg2) !important;
+  background: rgba(19,29,48,0.60) !important;
   border-color: var(--glass-border) !important;
   box-shadow: var(--glass-shadow) !important;
 }
 .mp-analysis {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border2) !important;
-  backdrop-filter: var(--glass-blur-sm);
-  -webkit-backdrop-filter: var(--glass-blur-sm);
+  background: rgba(12,18,32,0.50) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
   box-shadow: var(--glass-shadow-sm);
 }
 .mp-analysis-card {
   background: rgba(0,0,0,0.2) !important;
-  border: 1px solid var(--glass-border2) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
   box-shadow: inset 0 1px 4px rgba(0,0,0,0.2);
 }
 .mp-table-wrap {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border) !important;
-  backdrop-filter: var(--glass-blur-sm);
-  -webkit-backdrop-filter: var(--glass-blur-sm);
+  background: rgba(12,18,32,0.50) !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
   box-shadow: var(--glass-shadow) !important;
 }
+

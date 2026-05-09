@@ -25,7 +25,7 @@
 
 .ms-body {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 1fr;
   min-height: 180px;
 }
 @media (max-width: 860px) {
@@ -33,7 +33,7 @@
 }
 
 /* ── Quote List ──────────────────────────────── */
-.ms-quotes-col {
+.ms-quotes-col { display: none; }
   border-right: 1px solid var(--border);
   padding: 8px 0;
 }
@@ -88,7 +88,7 @@
 }
 
 /* ── Market Heatmap ──────────────────────────── */
-.ms-map-col { padding: 12px 14px; }
+.ms-map-col { padding: 16px 18px; width: 100%; }
 .ms-map-head {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 10px;
@@ -281,14 +281,14 @@
 
 .hm-canvas {
   width: 100%;
-  min-height: 220px;
+  min-height: 480px;
   overflow: hidden;
 }
 .hm-canvas svg { border-radius: 6px; }
 
 /* 마켓맵 컨테이너 높이 확대 */
-.ms-map-body { min-height: 240px; }
-@media (min-width: 861px) { .ms-body { grid-template-columns: 300px 1fr; } }
+.ms-map-body { min-height: 500px; }
+@media (min-width: 1200px) { .ms-body { grid-template-columns: 280px 1fr; } }
 
 
 
@@ -310,10 +310,10 @@
 @media (max-width: 768px) {
   /* 시장 섹션 — 세로 배치 */
   .ms-body { grid-template-columns: 1fr !important; }
-  .ms-quotes-col { border-right: none; border-bottom: 1px solid var(--border); }
+  .ms-quotes-col { display: none; border-right: none; border-bottom: 1px solid var(--border); }
 
   /* 히트맵 높이 */
-  .hm-canvas { min-height: 180px; }
+  .hm-canvas { min-height: 280px; }
 
   /* 52주 신고가 카드 — 2열 */
   .h52-cards { grid-template-columns: repeat(2, 1fr); }
@@ -350,51 +350,51 @@
    Glassmorphism — Dashboard 컴포넌트
 ═══════════════════════════════════════════════ */
 .market-section {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border) !important;
-  backdrop-filter: var(--glass-blur-sm);
-  -webkit-backdrop-filter: var(--glass-blur-sm);
+  background: rgba(12,18,32,0.50) !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
   box-shadow: var(--glass-shadow) !important;
 }
 .ms-head {
   background: rgba(255,255,255,0.04) !important;
 }
 .h52-card {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border2) !important;
-  backdrop-filter: var(--glass-blur-sm);
-  -webkit-backdrop-filter: var(--glass-blur-sm);
+  background: rgba(12,18,32,0.50) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
   box-shadow: var(--glass-shadow-sm);
 }
 .h52-card:hover {
-  background: var(--glass-bg2) !important;
+  background: rgba(19,29,48,0.60) !important;
   border-color: rgba(245,158,11,0.35) !important;
   box-shadow: var(--glass-shadow), 0 0 0 1px rgba(245,158,11,0.15) !important;
 }
 .portfolio-wrap {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border) !important;
-  backdrop-filter: var(--glass-blur-sm);
-  -webkit-backdrop-filter: var(--glass-blur-sm);
+  background: rgba(12,18,32,0.50) !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
   box-shadow: var(--glass-shadow) !important;
 }
 .ms-map-body {
   background: rgba(0,0,0,0.2);
   border-radius: var(--radius);
-  border: 1px solid var(--glass-border2);
-  backdrop-filter: var(--glass-blur-sm);
-  box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 2px 8px rgba(0,0,0,0.3);
   padding: 10px;
 }
 .hm-tab, .h52-tab {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border2) !important;
-  backdrop-filter: var(--glass-blur-sm);
+  background: rgba(12,18,32,0.50) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   transition: all 0.18s;
 }
 .hm-tab:hover, .h52-tab:hover {
-  background: var(--glass-bg2) !important;
+  background: rgba(19,29,48,0.60) !important;
   border-color: var(--glass-border) !important;
 }
 .hm-tab.active, .h52-tab.active {
@@ -403,12 +403,12 @@
   box-shadow: 0 0 12px rgba(129,140,248,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 .ms-map-btn {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border2) !important;
+  background: rgba(12,18,32,0.50) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 .ms-map-btn:hover {
-  background: var(--glass-bg2) !important;
+  background: rgba(19,29,48,0.60) !important;
 }
 .ps-item {
   background: rgba(255,255,255,0.03) !important;
@@ -416,3 +416,6 @@
 .portfolio-table th {
   background: rgba(0,0,0,0.25) !important;
 }
+
+
+

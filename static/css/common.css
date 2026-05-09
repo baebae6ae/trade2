@@ -53,7 +53,12 @@ html { font-size: 14px; scroll-behavior: smooth; }
 
 body {
   font-family: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  background: var(--bg);
+  background:
+    radial-gradient(ellipse 65% 45% at 8% 12%, rgba(99,102,241,0.20) 0%, transparent 100%),
+    radial-gradient(ellipse 55% 40% at 92% 82%, rgba(34,211,238,0.13) 0%, transparent 100%),
+    radial-gradient(ellipse 45% 55% at 55% 0%,  rgba(99,102,241,0.08) 0%, transparent 100%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text1);
   min-height: 100vh;
   display: flex;
@@ -546,35 +551,42 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
    Glassmorphism System (Dark Frosted)
 ═══════════════════════════════════════════════ */
 :root {
-  --glass-bg:      rgba(255,255,255,0.06);
-  --glass-bg2:     rgba(255,255,255,0.10);
-  --glass-bg3:     rgba(255,255,255,0.04);
-  --glass-border:  rgba(255,255,255,0.14);
-  --glass-border2: rgba(255,255,255,0.08);
-  --glass-shadow:  0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset;
-  --glass-shadow-sm: 0 4px 16px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.06) inset;
-  --glass-blur:    blur(16px) saturate(180%);
-  --glass-blur-sm: blur(10px) saturate(160%);
+  /* Glassmorphism — semi-transparent over gradient background */
+  --glass-bg:      rgba(12,18,32,0.50);
+  --glass-bg2:     rgba(19,29,48,0.60);
+  --glass-bg3:     rgba(8,13,24,0.45);
+  --glass-border:  rgba(255,255,255,0.18);
+  --glass-border2: rgba(255,255,255,0.10);
+  --glass-border-top: rgba(255,255,255,0.28);
+  --glass-shadow:  0 8px 32px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.14) inset;
+  --glass-shadow-sm: 0 4px 18px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.10) inset;
+  --glass-blur:    blur(24px) saturate(200%) brightness(1.05);
+  --glass-blur-sm: blur(16px) saturate(180%) brightness(1.03);
 }
 
 /* Glassmorphism 공통 요소 */
 .topbar-nav {
-  background: rgba(255,255,255,0.07) !important;
-  border: 1px solid var(--glass-border) !important;
-  backdrop-filter: var(--glass-blur-sm);
-  -webkit-backdrop-filter: var(--glass-blur-sm);
-  box-shadow: var(--glass-shadow-sm);
+  background: rgba(8,13,24,0.65) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.16) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  backdrop-filter: blur(24px) saturate(200%) brightness(1.05);
+  -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(1.05);
+  box-shadow: 0 6px 28px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12);
 }
 .ver {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border2) !important;
-  backdrop-filter: var(--glass-blur-sm);
+  background: rgba(12,18,32,0.50) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
 }
 .search-input {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border2) !important;
-  backdrop-filter: var(--glass-blur-sm);
-  box-shadow: none;
+  background: rgba(12,18,32,0.45) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 .search-input:focus {
   background: var(--glass-bg2) !important;
@@ -635,5 +647,8 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   .search-input { font-size: 12px; }
   .search-input::placeholder { font-size: 11px; }
 }
+
+
+
 
 
