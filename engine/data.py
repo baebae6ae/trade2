@@ -249,21 +249,34 @@ def get_info(ticker: str) -> dict:
 # ── 4. 종목 검색 ──────────────────────────────────────────
 
 def search_ticker(query: str) -> list:
-    """52주 신고가와 동일한 종목 풀에서 검색 → [{symbol, name, exchange, type}, ...]"""
+    """
+    종목 검색 (한글/영문/ticker 모두 지원)
+    
+    검색 로직:
+      1. ALL_STOCKS에서 먼저 검색 (하드코딩된 우선)
+      2. 결과 없거나 부족하면 yfinance 동적 검색
+      3. 결과 통합 및 정렬
+    """
     q = (query or "").strip()
     if not q:
         return []
 
     compact = q.replace(" ", "").lower()
-    ranked = []
+    ranked = {}  # symbol -> {name, score} (중복 제거용)
+    
+    # ─────────────────────────────────────────────
+    # Step 1: ALL_STOCKS에서 검색 (하드코딩된 우선)
+    # ─────────────────────────────────────────────
     for symbol, name in ALL_STOCKS:
         symbol_u = symbol.upper()
         name_key = name.replace(" ", "").lower()
         symbol_key = symbol.lower()
+        
         if compact not in name_key and compact not in symbol_key:
             continue
 
         score = 0
+        # 이름 매칭
         if name == q or name_key == compact:
             score += 100
         elif name.startswith(q):
@@ -271,6 +284,7 @@ def search_ticker(query: str) -> list:
         elif compact in name_key:
             score += 35
 
+        # Ticker 매칭
         if symbol_key == compact:
             score += 90
         elif symbol_key.startswith(compact):
@@ -278,13 +292,44 @@ def search_ticker(query: str) -> list:
         elif compact in symbol_key:
             score += 10
 
-        ranked.append({
-            "symbol": symbol_u,
-            "name": name,
-            "exchange": "KRX" if symbol_u.endswith((".KS", ".KQ")) else "US",
+        if score > 0:
+            ranked[symbol_u] = {"name": name, "score": score}
+
+    # ─────────────────────────────────────────────
+    # Step 2: 결과 없으면 yfinance 동적 검색
+    # ─────────────────────────────────────────────
+    if not ranked:
+        try:
+            # ticker 직접 조회 (정확히 일치하는 경우)
+            ticker_normalized = q.upper()
+            if len(ticker_normalized) <= 10:
+                symbol, name = _get_from_universe(ticker_normalized)
+                if symbol:
+                    ranked[symbol] = {"name": name, "score": 80}
+        except:
+            pass
+
+    # ─────────────────────────────────────────────
+    # Step 3: 결과 포맷 및 정렬
+    # ─────────────────────────────────────────────
+    results = []
+    for symbol, data in ranked.items():
+        results.append({
+            "symbol": symbol,
+            "name": data["name"],
+            "exchange": "KRX" if symbol.endswith((".KS", ".KQ")) else "US",
             "type": "EQUITY",
-            "_score": score,
+            "_score": data["score"],
         })
 
-    ranked.sort(key=lambda item: (-item["_score"], item["name"], item["symbol"]))
-    return [{k: v for k, v in item.items() if k != "_score"} for item in ranked[:8]]
+    results.sort(key=lambda x: (-x["_score"], x["name"], x["symbol"]))
+    return [{k: v for k, v in item.items() if k != "_score"} for item in results[:8]]
+
+
+def _get_from_universe(ticker: str) -> tuple:
+    """universe에서 종목 정보 가져오기 (없으면 yfinance에서 동적 로드)"""
+    from engine.universe import get_or_fetch_stock_info
+    try:
+        return get_or_fetch_stock_info(ticker)
+    except:
+        return None, None
