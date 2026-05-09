@@ -170,7 +170,7 @@ def _kumo_check_one(ticker_name):
 
         # ── 조건 2: 최근 4~16주 내에 구름 돌파 시점 찾기 ──
         brk_idx = None
-        for i in range(n - 24, n):
+        for i in range(n - 36, n):
             if i < 1:
                 continue
             if above[i] == 1 and above[i-1] != 1:
@@ -248,4 +248,5 @@ def scan_kumo_breakout(market: str) -> list:
                 results.append(r)
     results.sort(key=lambda x: x.get("below_weeks", 0), reverse=True)
     return results
+
 
