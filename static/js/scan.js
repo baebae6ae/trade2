@@ -1,4 +1,16 @@
 ﻿/* static/js/scan.js */
+let _scanType = "fis";
+
+function selectScanType(type) {
+  _scanType = type;
+  document.querySelectorAll(".stab").forEach(t => {
+    t.classList.toggle("active", t.dataset.type === type);
+  });
+  const desc = document.getElementById("kumoDesc");
+  if (desc) desc.style.display = type === "kumo" ? "block" : "none";
+  document.getElementById("resultsSection").style.display = "none";
+}
+
 
 let _market = "kospi";
 let _scanning = false;
@@ -20,11 +32,15 @@ async function doScan() {
   btn.innerHTML = `<span class="spin"></span> 분석 중...`;
   document.getElementById("resultsSection").style.display = "none";
   const label = {kospi:"코스피", kosdaq:"코스닥", us:"미국"}[_market];
-  document.getElementById("loadingMsg").textContent = `${label} 종목 분석 중... (최대 30초 소요)`;
+  const scanLabel = _scanType === "kumo" ? "쿠모 브레이크아웃" : "FIS 진입";
+  document.getElementById("loadingMsg").textContent = `${label} ${scanLabel} 분석 중... (최대 30초 소요)`;
   document.getElementById("loadingOverlay").style.display = "flex";
 
   try {
-    const data = await fetch(`/api/scan/${_market}`).then(r => r.json());
+    const apiUrl = _scanType === "kumo"
+      ? `/api/scan/kumo/${_market}`
+      : `/api/scan/${_market}`;
+    const data = await fetch(apiUrl).then(r => r.json());
     document.getElementById("loadingOverlay").style.display = "none";
     if (!data.ok) { showToast("스캔 오류: " + data.error, "error"); return; }
     renderResults(data.candidates, label);
@@ -44,8 +60,10 @@ function renderResults(candidates, label) {
   const countEl = document.getElementById("resultCount");
   const gridEl  = document.getElementById("candidatesGrid");
   countEl.textContent = candidates.length + "개";
-  document.getElementById("resultLabel").textContent =
-    `${label} 상승 우위 진입 후보 (진입 점수 높은 순)`;
+  const resultDesc = _scanType === "kumo"
+    ? `${label} 쿠모 브레이크아웃 패턴 종목 (구름 아래 체류기간 긴 순)`
+    : `${label} 상승 우위 진입 후보 (진입 점수 높은 순)`;
+  document.getElementById("resultLabel").textContent = resultDesc;
 
   if (!candidates.length) {
     gridEl.innerHTML = `
@@ -58,6 +76,11 @@ function renderResults(candidates, label) {
     return;
   }
 
+  if (_scanType === "kumo") {
+    gridEl.innerHTML = candidates.map(c => renderKumoCard(c)).join("");
+    section.style.display = "block";
+    return;
+  }
   gridEl.innerHTML = candidates.map((c, idx) => {
     const col    = fisColorGlobal(c.fis);
     const eScore = c.entry_score ?? 0;
@@ -317,3 +340,36 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.id === "chartModal") closeChartModal();
   });
 });
+
+
+
+// ── 쿠모 브레이크아웃 카드 렌더 ──────────────────────────
+function renderKumoCard(c) {
+  const fmt2 = v => v >= 1000 ? v.toLocaleString() : v.toFixed(2);
+  const cloudBadge = c.bull_cloud
+    ? `<span style="background:#E53935;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">상승구름</span>`
+    : `<span style="background:#2196F3;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">구름위</span>`;
+  const volBadge = c.daily_vol
+    ? `<span style="background:#2ea043;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">거래량 폭발</span>`
+    : `<span style="background:var(--bg3);color:var(--text2);padding:2px 8px;border-radius:12px;font-size:11px;">일봉 확인필요</span>`;
+  return `
+    <div class="candidate-card" onclick="openChartModal('${c.ticker}','${c.name}')">
+      <div class="cc-top">
+        <div>
+          <div class="cc-name">${c.name}</div>
+          <div class="cc-ticker">${c.ticker} · ${fmt(c.close)}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          ${cloudBadge}
+          ${volBadge}
+        </div>
+      </div>
+      <div class="cc-scores" style="margin-top:10px">
+        <span class="cs-chip pos" title="구름 아래 체류 주수">구름아래 ${c.below_weeks}주</span>
+        <span class="cs-chip" style="background:var(--bg3);color:var(--text1)" title="구름 최소 두께">구름두께 ${c.cloud_thin}%</span>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text2)">
+        주봉 구름 아래 <strong style="color:var(--text1)">${c.below_weeks}주</strong> 체류 후 상향 돌파 · 구름 반전 확인
+      </div>
+    </div>`;
+}

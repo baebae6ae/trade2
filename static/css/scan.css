@@ -330,3 +330,32 @@
 .mbuy-trailing-signal { font-size: 11px; color: var(--text2); }
 .mbuy-trailing-desc   { font-size: 10px; color: var(--text3); margin-top: 8px; }
 
+
+/* 스캔 유형 탭 */
+.scan-type-tabs {
+  display: flex; gap: 8px; margin-bottom: 20px;
+}
+.stab {
+  padding: 7px 18px;
+  border-radius: 8px;
+  font-size: 13px; font-weight: 700;
+  color: var(--text2);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.stab:hover  { color: var(--text1); border-color: var(--text3); }
+.stab.active { color: #fff; background: #5a4fcf; border-color: #5a4fcf; }
+
+/* 쿠모 설명 박스 */
+.kumo-desc {
+  background: rgba(90,79,207,0.12);
+  border: 1px solid rgba(90,79,207,0.35);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text1);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}

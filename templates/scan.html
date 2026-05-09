@@ -42,7 +42,18 @@
 
   <div class="scan-hero">
     <h1>신규 진입 종목 찾기</h1>
-    <p>FIS 점수 기반으로 진입 조건을 충족하는 종목을 자동 발굴합니다</p>
+    <p>FIS 점수 기반 진입 후보 또는 쿠모 브레이크아웃 패턴 종목을 자동 발굴합니다</p>
+  </div>
+
+  <!-- 스캔 유형 탭 -->
+  <div class="scan-type-tabs">
+    <button class="stab active" data-type="fis"  onclick="selectScanType('fis')">FIS 진입 스캔</button>
+    <button class="stab"        data-type="kumo" onclick="selectScanType('kumo')">쿠모 브레이크아웃</button>
+  </div>
+  <div id="kumoDesc" class="kumo-desc" style="display:none">
+    <strong>쿠모 브레이크아웃 (Kumo Breakout)</strong> — 주봉 기준 구름대(Kumo) 아래에서 20주 이상 체류 후,
+    구름이 얇아지며 반전(Kumo Twist)되는 시점에 가격이 구름을 상향 돌파한 종목을 자동 발굴합니다.
+    일봉 거래량 폭발 + 장대양봉 조건도 함께 확인합니다.
   </div>
 
   <!-- 마켓 탭 -->
@@ -140,3 +151,4 @@
 <script src="/static/js/scan.js"></script>
 </body>
 </html>
+

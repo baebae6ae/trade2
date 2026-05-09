@@ -17,7 +17,7 @@ from engine.data      import (
 from engine.fis       import calc_fis, make_judgment, calc_entry_score
 from engine.chart     import render_main_chart, render_mini_chart
 from engine.market    import get_market_summary
-from engine.scanner   import scan_market
+from engine.scanner   import scan_market, scan_kumo_breakout
 from engine.portfolio import buy as port_buy, sell as port_sell, get_positions, update_trailing_stop
 
 BASE_DIR   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -265,6 +265,21 @@ def api_scan(market: str):
                         "trace": traceback.format_exc()}), 500
 
 
+
+
+# ── API: 쿠모 브레이크아웃 스캔 ──────────────────────────
+
+@app.route("/api/scan/kumo/<market>")
+def api_scan_kumo(market: str):
+    if market.lower() not in ("kospi", "kosdaq", "us"):
+        return jsonify({"ok": False, "error": "market must be kospi|kosdaq|us"}), 400
+    try:
+        candidates = scan_kumo_breakout(market)
+        return jsonify({"ok": True, "market": market, "candidates": candidates})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e),
+                        "trace": traceback.format_exc()}), 500
+
 # ── API: 포트폴리오 조회 ──────────────────────────────────
 
 @app.route("/api/portfolio")
@@ -395,3 +410,4 @@ def api_sell():
 
 def create_app():
     return app
+

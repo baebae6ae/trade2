@@ -1,4 +1,4 @@
-"""
+﻿"""
 engine/chart.py
 Matplotlib 캔들차트 → base64 PNG 변환 모듈
 (파일 저장 없이 메모리에서 직접 인코딩)
@@ -6,6 +6,9 @@ Matplotlib 캔들차트 → base64 PNG 변환 모듈
 
 import io
 import base64
+import os
+import urllib.request
+import tempfile
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -15,7 +18,30 @@ import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
 from matplotlib.patches import FancyBboxPatch
 
-matplotlib.rcParams["font.family"] = ["Malgun Gothic", "DejaVu Sans"]
+def _setup_korean_font():
+    """Render/Linux 환경에서 한글 폰트 자동 다운로드 및 등록"""
+    import matplotlib.font_manager as fm
+    for font in fm.fontManager.ttflist:
+        if any(k in font.name for k in ["Nanum", "Malgun", "Apple SD Gothic"]):
+            matplotlib.rcParams["font.family"] = [font.name, "DejaVu Sans"]
+            return
+    dest = os.path.join(tempfile.gettempdir(), "NanumGothic.ttf")
+    if not os.path.exists(dest):
+        try:
+            urllib.request.urlretrieve(
+                "https://raw.githubusercontent.com/google/fonts/main/ofl/nanumgothic/NanumGothic-Regular.ttf",
+                dest
+            )
+        except Exception:
+            return
+    if os.path.exists(dest):
+        try:
+            fm.fontManager.addfont(dest)
+        except AttributeError:
+            pass
+        matplotlib.rcParams["font.family"] = ["NanumGothic", "DejaVu Sans"]
+
+_setup_korean_font()
 matplotlib.rcParams["axes.unicode_minus"] = False
 
 BG       = "#131722"
@@ -23,8 +49,8 @@ BG2      = "#1E222D"
 BG3      = "#1A1E2E"
 GRID     = "#2A2E39"
 TEXT     = "#B2B5BE"
-BULL     = "#E53935"
-BEAR     = "#1E88E5"
+BULL     = "#FF4444"
+BEAR     = "#2196F3"
 BULL_T   = "#E5393580"
 BEAR_T   = "#1E88E580"
 
@@ -120,14 +146,14 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
             df["ICH_SENKOU_A"].values,
             df["ICH_SENKOU_B"].values,
             where=df["ICH_SENKOU_A"].values >= df["ICH_SENKOU_B"].values,
-            alpha=0.13, color=BULL, zorder=1, label="구름(상승)"
+            alpha=0.30, color=BULL, zorder=1, label="구름(상승)"
         )
         ax_c.fill_between(
             xs,
             df["ICH_SENKOU_A"].values,
             df["ICH_SENKOU_B"].values,
             where=df["ICH_SENKOU_A"].values < df["ICH_SENKOU_B"].values,
-            alpha=0.13, color=BEAR, zorder=1, label="구름(하락)"
+            alpha=0.30, color=BEAR, zorder=1, label="구름(하락)"
         )
         ax_c.plot(xs, df["ICH_TENKAN"].values,
                   color="#F44336", lw=0.85, ls="-.", label="전환", zorder=4)
@@ -292,3 +318,4 @@ def render_mini_chart(df: pd.DataFrame, ticker: str, fis: float) -> str:
     b64 = _fig_to_b64(fig)
     plt.close(fig)
     return b64
+
