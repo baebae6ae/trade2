@@ -281,13 +281,15 @@
 
 .hm-canvas {
   width: 100%;
-  min-height: 480px;
+  aspect-ratio: 16 / 9;
+  min-height: 320px;
+  max-height: 70vh;
   overflow: hidden;
 }
 .hm-canvas svg { border-radius: 6px; }
 
-/* 마켓맵 컨테이너 높이 확대 */
-.ms-map-body { min-height: 500px; }
+/* 마켓맵 컨테이너 — aspect-ratio로 비율 유지 */
+.ms-map-body { padding-bottom: 4px; }
 @media (min-width: 1200px) { .ms-body { grid-template-columns: 280px 1fr; } }
 
 
@@ -350,72 +352,77 @@
    Glassmorphism — Dashboard 컴포넌트
 ═══════════════════════════════════════════════ */
 .market-section {
-  background: rgba(12,18,32,0.50) !important;
-  border: 1px solid rgba(255,255,255,0.16) !important;
-  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
-  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  background: var(--glass-card) !important;
+  border: 1px solid var(--glass-border) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
   box-shadow: var(--glass-shadow) !important;
 }
 .ms-head {
-  background: rgba(255,255,255,0.04) !important;
+  background: rgba(255,255,255,0.05) !important;
+  border-bottom: 1px solid var(--glass-border2) !important;
 }
 .h52-card {
-  background: rgba(12,18,32,0.50) !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
-  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
-  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  background: var(--glass-card) !important;
+  border: 1px solid var(--glass-border2) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
   box-shadow: var(--glass-shadow-sm);
 }
 .h52-card:hover {
-  background: rgba(19,29,48,0.60) !important;
-  border-color: rgba(245,158,11,0.35) !important;
-  box-shadow: var(--glass-shadow), 0 0 0 1px rgba(245,158,11,0.15) !important;
+  background: var(--glass-card2) !important;
+  border-color: rgba(245,158,11,0.40) !important;
+  box-shadow: var(--glass-shadow), 0 0 16px rgba(245,158,11,0.12) !important;
 }
 .portfolio-wrap {
-  background: rgba(12,18,32,0.50) !important;
-  border: 1px solid rgba(255,255,255,0.16) !important;
-  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
-  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
+  background: var(--glass-card) !important;
+  border: 1px solid var(--glass-border) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
   box-shadow: var(--glass-shadow) !important;
 }
 .ms-map-body {
-  background: rgba(0,0,0,0.2);
+  background: var(--glass-inset);
   border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.12);
-  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 2px 8px rgba(0,0,0,0.3);
+  border: 1px solid var(--glass-border2);
+  box-shadow: inset 0 2px 12px rgba(0,0,0,0.30);
   padding: 10px;
 }
 .hm-tab, .h52-tab {
-  background: rgba(12,18,32,0.50) !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
-  backdrop-filter: blur(16px) saturate(180%) brightness(1.03);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid var(--glass-border2) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
   transition: all 0.18s;
 }
 .hm-tab:hover, .h52-tab:hover {
-  background: rgba(19,29,48,0.60) !important;
+  background: rgba(255,255,255,0.12) !important;
   border-color: var(--glass-border) !important;
 }
 .hm-tab.active, .h52-tab.active {
-  background: rgba(129,140,248,0.15) !important;
-  border-color: rgba(129,140,248,0.4) !important;
-  box-shadow: 0 0 12px rgba(129,140,248,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+  background: rgba(129,140,248,0.18) !important;
+  border-color: rgba(129,140,248,0.45) !important;
+  box-shadow: 0 0 14px rgba(129,140,248,0.20), inset 0 1px 0 rgba(255,255,255,0.12);
 }
 .ms-map-btn {
-  background: rgba(12,18,32,0.50) !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid var(--glass-border2) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .ms-map-btn:hover {
-  background: rgba(19,29,48,0.60) !important;
+  background: rgba(255,255,255,0.12) !important;
 }
 .ps-item {
-  background: rgba(255,255,255,0.03) !important;
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid var(--glass-border2) !important;
 }
 .portfolio-table th {
-  background: rgba(0,0,0,0.25) !important;
+  background: rgba(255,255,255,0.05) !important;
 }
+
+
 
 
 

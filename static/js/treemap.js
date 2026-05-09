@@ -85,8 +85,9 @@ function _squarify(items, x, y, w, h, total) {
  */
 function renderTreemap(container, data, mode) {
   container.innerHTML = "";
-  const cw = container.clientWidth  || 600;
-  const ch = container.clientHeight || 360;
+  const cw = container.clientWidth  || 700;
+  // aspect-ratio 16:9 CSS가 적용되지 않은 경우 fallback
+  const ch = container.clientHeight  || Math.round(cw * 9 / 16) || 400;
 
   if (mode === "sector") {
     _renderSectorMap(container, data, cw, ch);
@@ -280,4 +281,5 @@ function _renderStockMap(container, data, cw, ch) {
   }
   container.appendChild(svg);
 }
+
 
