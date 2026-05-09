@@ -30,7 +30,7 @@
       "name": "기아",
       "quantity": 6,
       "avg_price": 164800.0,
-      "max_trailing_stop": null,
+      "max_trailing_stop": 159671.4286,
       "buys": [
         {
           "date": "2026-05-09 16:55",
