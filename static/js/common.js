@@ -137,3 +137,12 @@ function showToast(msg, type = "success") {
   el.className = `toast toast-${type} show`;
   setTimeout(() => el.classList.remove("show"), 3200);
 }
+
+// Mobile nav active mark
+(function markMobileNav() {
+  const path = window.location.pathname.split("?")[0].replace(/\/$/, "") || "/";
+  document.querySelectorAll(".mn-item").forEach(a => {
+    const href = (a.getAttribute("href") || "").replace(/\/$/, "") || "/";
+    if (href === path) a.classList.add("active");
+  });
+})();

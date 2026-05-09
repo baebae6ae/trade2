@@ -66,6 +66,12 @@ function renderQuotes(containerId, items, updatedId) {
 const _mapCache = {};   // region -> data
 const _mapMode  = { KR: "sector", US: "sector" };
 
+function _hmDescText(mode) {
+  return mode === "sector"
+    ? "섹터 평균 등락률 | 블록 크기 = 섹터 내 종목 수 | 색상: 초록(상승) / 빨강(하락)"
+    : "개별 종목 당일 등락률 | 섹터별로 그룹화 | 블록 크기 균등 | 색상: 초록(상승) / 빨강(하락)";
+}
+
 async function loadMarketMap(region) {
   const bodyId = region === "KR" ? "krMapBody" : "usMapBody";
   const body   = document.getElementById(bodyId);
@@ -101,6 +107,13 @@ function _drawMap(region, body, data) {
     <button class="hm-tab ${mode==="stock"?"active":""}"  onclick="_switchMapMode('${region}','stock',this)">종목</button>`;
   body.appendChild(tabBar);
 
+  // 히트맵 기준 설명
+  const hmDesc = document.createElement("div");
+  hmDesc.className = "hm-desc";
+  hmDesc.id = region + "HmDesc";
+  hmDesc.textContent = _hmDescText(mode);
+  body.appendChild(hmDesc);
+
   const canvas = document.createElement("div");
   canvas.className = "hm-canvas";
   body.appendChild(canvas);
@@ -119,6 +132,8 @@ function _switchMapMode(region, mode, btn) {
       canvas.innerHTML = "";
       renderTreemap(canvas, _mapCache[region], mode);
     }
+    const descEl = body.querySelector(".hm-desc");
+    if (descEl) descEl.textContent = _hmDescText(mode);
   }
 }
 
@@ -259,3 +274,4 @@ document.addEventListener("DOMContentLoaded", () => {
   // 우선순위 3: 52주 신고가 (배치, 느림)
   setTimeout(() => load52h("kospi", document.querySelector(".h52-tab")), 1000);
 });
+

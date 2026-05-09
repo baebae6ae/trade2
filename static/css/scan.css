@@ -268,3 +268,49 @@
   box-shadow: 0 6px 20px rgba(129,140,248,0.5);
   transform: translateY(-1px);
 }
+
+/* ═══════════════════════════════════════════════
+   Neumorphism — Scan
+═══════════════════════════════════════════════ */
+.candidate-card {
+  box-shadow: var(--nm-raised);
+}
+.candidate-card:hover {
+  box-shadow: var(--nm-raised), 0 0 0 1px rgba(129,140,248,0.1) !important;
+}
+.stab, .mtab {
+  box-shadow: var(--nm-btn);
+}
+.stab:hover, .mtab:hover {
+  box-shadow: var(--nm-raised-sm);
+}
+.stab.active, .mtab.active {
+  box-shadow: var(--nm-inset);
+}
+.scan-btn {
+  box-shadow: 0 4px 20px rgba(129,140,248,0.35), var(--nm-raised-sm);
+}
+.chart-modal-box {
+  box-shadow: var(--shadow-lg), var(--nm-raised);
+}
+.kumo-desc {
+  box-shadow: var(--nm-inset);
+}
+
+/* ── Scan Mobile Responsive ─────────────────── */
+@media (max-width: 768px) {
+  .scan-hero h1    { font-size: 20px; }
+  .scan-hero       { padding: 20px 0 14px; margin-bottom: 20px; }
+  .candidates-grid { grid-template-columns: 1fr; }
+  .scan-type-tabs  { flex-wrap: wrap; }
+  .market-tabs     { flex-wrap: wrap; }
+  .scan-btn        { width: 100%; justify-content: center; }
+  .result-header   { flex-wrap: wrap; gap: 6px; }
+  .kumo-desc       { font-size: 12px; padding: 12px 14px; }
+  .chart-modal-box { width: 95%; max-height: 85vh; }
+}
+@media (max-width: 480px) {
+  .cc-top { flex-direction: column; gap: 8px; }
+  .cc-actions { flex-wrap: wrap; }
+  .cc-action-btn { min-width: 80px; }
+}

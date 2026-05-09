@@ -265,3 +265,38 @@
   border: 1px solid rgba(96,165,250,0.28); transition: all 0.2s;
 }
 .btn-part-sell:hover { background: rgba(96,165,250,0.18); }
+
+/* ═══════════════════════════════════════════════
+   Neumorphism — Mypage
+═══════════════════════════════════════════════ */
+.mp-card {
+  box-shadow: var(--nm-raised);
+}
+.mp-card:hover {
+  box-shadow: var(--nm-raised), 0 0 0 1px rgba(148,163,184,0.15) !important;
+}
+.mp-analysis {
+  box-shadow: var(--nm-raised);
+}
+.mp-analysis-card {
+  box-shadow: var(--nm-inset);
+}
+.mp-table-wrap {
+  box-shadow: var(--nm-raised) !important;
+}
+
+/* ── Mypage Mobile Responsive ───────────────── */
+@media (max-width: 768px) {
+  .mypage-hero h1     { font-size: 20px; }
+  .mypage-hero        { padding: 20px 0 14px; margin-bottom: 20px; }
+  .mp-summary         { grid-template-columns: repeat(2, 1fr); }
+  .mp-analysis-grid   { grid-template-columns: repeat(2, 1fr); }
+  .mp-analysis        { padding: 16px 16px; }
+  .mp-analysis-head   { flex-direction: column; gap: 8px; }
+  .mp-analysis-badge  { align-self: flex-start; }
+}
+@media (max-width: 480px) {
+  .mp-summary         { grid-template-columns: 1fr 1fr; }
+  .mp-analysis-grid   { grid-template-columns: 1fr; }
+  .mp-card-value      { font-size: 18px; }
+}

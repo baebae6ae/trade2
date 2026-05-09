@@ -541,3 +541,66 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   letter-spacing: 0.2px;
 }
 
+
+/* ═══════════════════════════════════════════════
+   Neumorphism System (Dark)
+═══════════════════════════════════════════════ */
+:root {
+  --nm-raised:    -3px -3px 8px rgba(255,255,255,0.045), 4px 4px 14px rgba(0,0,0,0.55);
+  --nm-raised-sm: -2px -2px 5px rgba(255,255,255,0.035), 2px 2px 8px rgba(0,0,0,0.45);
+  --nm-inset:     inset -2px -2px 5px rgba(255,255,255,0.025), inset 2px 2px 8px rgba(0,0,0,0.45);
+  --nm-btn:       -1px -1px 4px rgba(255,255,255,0.04), 2px 2px 6px rgba(0,0,0,0.4);
+}
+
+/* Neumorphism 적용 공통 요소 */
+.topbar-nav       { box-shadow: var(--nm-raised-sm); }
+.ver              { box-shadow: var(--nm-inset); }
+.search-input     { box-shadow: var(--nm-inset); }
+.search-input:focus { box-shadow: 0 0 0 3px var(--accent-glow), var(--nm-inset); }
+
+/* ── Mobile Bottom Navigation ──────────────── */
+.mobile-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 58px;
+  background: rgba(8,13,22,0.97);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--border);
+  z-index: 200;
+  justify-content: space-around;
+  align-items: stretch;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.5), var(--nm-raised);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.mn-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: var(--text3);
+  gap: 4px; cursor: pointer; transition: color 0.18s;
+  text-decoration: none;
+  border-right: 1px solid var(--border2);
+  letter-spacing: 0.3px;
+}
+.mn-item:last-child { border-right: none; }
+.mn-item:hover, .mn-item.active { color: var(--accent); }
+.mn-icon { font-size: 17px; line-height: 1; }
+
+/* ── Topbar Mobile ───────────────────────── */
+@media (max-width: 768px) {
+  .topbar      { padding: 0 12px; gap: 6px; height: 52px; }
+  .topbar-nav  { display: none; }
+  .topbar-search { max-width: unset; flex: 1; margin: 0; }
+  .topbar-right  { margin-left: 6px; }
+  .clock         { display: none; }
+  .ver           { display: none; }
+  .logo          { font-size: 17px; }
+  .topbar-brand  { min-width: unset; }
+  .main-content  { padding: 14px 12px 74px; }
+  .mobile-nav    { display: flex; }
+  .footer        { margin-bottom: 58px; }
+}
+@media (max-width: 480px) {
+  .search-input { font-size: 12px; }
+  .search-input::placeholder { font-size: 11px; }
+}

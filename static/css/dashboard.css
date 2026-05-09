@@ -288,4 +288,99 @@
 
 /* 마켓맵 컨테이너 높이 확대 */
 .ms-map-body { min-height: 240px; }
-.ms-body { grid-template-columns: 300px 1fr; }
+@media (min-width: 861px) { .ms-body { grid-template-columns: 300px 1fr; } }
+
+
+/* ═══════════════════════════════════════════════
+   Neumorphism — Dashboard 컴포넌트
+═══════════════════════════════════════════════ */
+.market-section {
+  box-shadow: var(--nm-raised) !important;
+}
+.h52-card {
+  box-shadow: var(--nm-raised);
+}
+.h52-card:hover {
+  box-shadow: var(--nm-raised), 0 0 0 1px rgba(245,158,11,0.1) !important;
+}
+.portfolio-wrap {
+  box-shadow: var(--nm-raised) !important;
+}
+.ms-map-body {
+  background: rgba(0,0,0,0.15);
+  border-radius: var(--radius);
+  box-shadow: var(--nm-inset);
+  padding: 10px;
+}
+.hm-tab, .h52-tab {
+  box-shadow: var(--nm-btn);
+}
+.hm-tab:hover, .h52-tab:hover {
+  box-shadow: var(--nm-raised-sm);
+}
+.hm-tab.active, .h52-tab.active {
+  box-shadow: var(--nm-inset);
+}
+.ms-map-btn {
+  box-shadow: var(--nm-btn);
+}
+.ms-map-btn:hover {
+  box-shadow: var(--nm-raised-sm);
+}
+.ps-item {
+  box-shadow: var(--nm-inset);
+}
+
+/* ── 히트맵 설명 텍스트 ───────────────────── */
+.hm-desc {
+  font-size: 10px;
+  color: var(--text3);
+  margin-bottom: 6px;
+  padding: 4px 2px;
+  letter-spacing: 0.2px;
+  border-left: 2px solid rgba(129,140,248,0.3);
+  padding-left: 8px;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════
+   Dashboard Mobile Responsive
+═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* 시장 섹션 — 세로 배치 */
+  .ms-body { grid-template-columns: 1fr !important; }
+  .ms-quotes-col { border-right: none; border-bottom: 1px solid var(--border); }
+
+  /* 히트맵 높이 */
+  .hm-canvas { min-height: 180px; }
+
+  /* 52주 신고가 카드 — 2열 */
+  .h52-cards { grid-template-columns: repeat(2, 1fr); }
+  .h52-price { font-size: 17px; }
+  .section-sub { display: none; }
+  .high52-tabs { flex-wrap: wrap; gap: 6px; }
+
+  /* 포트폴리오 */
+  .portfolio-summary { grid-template-columns: repeat(2, 1fr); }
+
+  /* 마켓맵 컬럼 */
+  .ms-map-col { padding: 10px 10px; }
+  .market-section { margin-bottom: 14px; }
+}
+
+@media (max-width: 480px) {
+  /* 52주 카드 — 1열 */
+  .h52-cards { grid-template-columns: 1fr; }
+
+  /* 포트폴리오 표 */
+  .portfolio-table td,
+  .portfolio-table th { padding: 10px 8px; font-size: 11px; }
+
+  /* 지수 목록 */
+  .mq-name { min-width: 70px; font-size: 12px; }
+  .mq-price { font-size: 13px; }
+
+  /* 마켓 헤더 */
+  .ms-title { font-size: 13px; }
+  .ms-flag  { font-size: 17px; }
+}
