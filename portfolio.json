@@ -12,6 +12,19 @@
           "price": 58431.0
         }
       ]
+    },
+    "394280.KQ": {
+      "name": "오픈엣지테크놀로지",
+      "quantity": 39,
+      "avg_price": 20756.0,
+      "max_trailing_stop": null,
+      "buys": [
+        {
+          "date": "2026-05-09 16:51",
+          "qty": 39,
+          "price": 20756.0
+        }
+      ]
     }
   }
 }
