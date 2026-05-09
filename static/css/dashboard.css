@@ -290,7 +290,7 @@
 
 /* 마켓맵 컨테이너 — aspect-ratio로 비율 유지 */
 .ms-map-body { padding-bottom: 4px; }
-@media (min-width: 1200px) { .ms-body { grid-template-columns: 280px 1fr; } }
+/* ms-quotes-col이 항상 hidden이므로 ms-body는 항상 1fr */
 
 
 
@@ -421,6 +421,7 @@
 .portfolio-table th {
   background: rgba(255,255,255,0.05) !important;
 }
+
 
 
 
