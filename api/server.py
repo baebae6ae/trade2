@@ -177,7 +177,7 @@ def api_analyze(ticker: str):
         ind_df    = calc_indicators(price_df, timeframe)
         fis_df    = calc_fis(ind_df)
         judgment  = make_judgment(fis_df)
-        chart_b64 = render_main_chart(fis_df, judgment, ticker, bars, timeframe)
+        chart_b64, chart_meta = render_main_chart(fis_df, judgment, ticker, bars, timeframe, include_meta=True)
 
         recent = fis_df.iloc[-30:].copy()
         recent.index = recent.index.strftime("%Y-%m-%d")
@@ -221,7 +221,7 @@ def api_analyze(ticker: str):
 
         return jsonify({
             "ok": True, "ticker": ticker, "info": info,
-            "judgment": judgment, "chart": chart_b64, "table": table,
+            "judgment": judgment, "chart": chart_b64, "chart_meta": chart_meta, "table": table,
             "entry_score": round(entry["score"], 1),
             "entry": entry,
             "timeframe": timeframe,

@@ -6,6 +6,7 @@ import warnings
 import numpy  as np
 import pandas as pd
 import yfinance as yf
+from engine.universe import ALL_STOCKS, NAME_MAP
 
 warnings.filterwarnings("ignore")
 
@@ -28,6 +29,14 @@ PERIOD_ORDER = {
     "10y": 7,
     "max": 8,
 }
+
+
+def resolve_display_name(symbol: str, fallback_name: str = "") -> str:
+    normalized = (symbol or "").strip().upper()
+    fallback = (fallback_name or "").strip()
+    if not normalized:
+        return fallback
+    return NAME_MAP.get(normalized, fallback or normalized)
 
 
 # ── 1. 데이터 수집 ──────────────────────────────────────────
@@ -223,8 +232,9 @@ def get_info(ticker: str) -> dict:
     """종목 기본 정보 (이름/섹터/시총 등)"""
     try:
         info = yf.Ticker(ticker).info
+        raw_name = info.get("longName") or info.get("shortName") or ticker
         return {
-            "name":       info.get("longName") or info.get("shortName") or ticker,
+            "name":       resolve_display_name(ticker, raw_name),
             "sector":     info.get("sector", ""),
             "industry":   info.get("industry", ""),
             "currency":   info.get("currency", ""),
@@ -232,24 +242,49 @@ def get_info(ticker: str) -> dict:
             "market_cap": info.get("marketCap"),
         }
     except Exception:
-        return {"name": ticker, "sector": "", "industry": "",
+        return {"name": resolve_display_name(ticker, ticker), "sector": "", "industry": "",
                 "currency": "", "exchange": "", "market_cap": None}
 
 
 # ── 4. 종목 검색 ──────────────────────────────────────────
 
 def search_ticker(query: str) -> list:
-    """yfinance 검색 → [{symbol, name, exchange, type}, ...]"""
-    try:
-        results = yf.Search(query, max_results=8).quotes
-        out = []
-        for r in results:
-            out.append({
-                "symbol":   r.get("symbol", ""),
-                "name":     r.get("longname") or r.get("shortname") or "",
-                "exchange": r.get("exchange", ""),
-                "type":     r.get("quoteType", ""),
-            })
-        return out
-    except Exception:
+    """52주 신고가와 동일한 종목 풀에서 검색 → [{symbol, name, exchange, type}, ...]"""
+    q = (query or "").strip()
+    if not q:
         return []
+
+    compact = q.replace(" ", "").lower()
+    ranked = []
+    for symbol, name in ALL_STOCKS:
+        symbol_u = symbol.upper()
+        name_key = name.replace(" ", "").lower()
+        symbol_key = symbol.lower()
+        if compact not in name_key and compact not in symbol_key:
+            continue
+
+        score = 0
+        if name == q or name_key == compact:
+            score += 100
+        elif name.startswith(q):
+            score += 60
+        elif compact in name_key:
+            score += 35
+
+        if symbol_key == compact:
+            score += 90
+        elif symbol_key.startswith(compact):
+            score += 25
+        elif compact in symbol_key:
+            score += 10
+
+        ranked.append({
+            "symbol": symbol_u,
+            "name": name,
+            "exchange": "KRX" if symbol_u.endswith((".KS", ".KQ")) else "US",
+            "type": "EQUITY",
+            "_score": score,
+        })
+
+    ranked.sort(key=lambda item: (-item["_score"], item["name"], item["symbol"]))
+    return [{k: v for k, v in item.items() if k != "_score"} for item in ranked[:8]]

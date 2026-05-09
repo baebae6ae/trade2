@@ -89,7 +89,17 @@
 
     <!-- 왼쪽: 차트 -->
     <div class="chart-col">
-      <img id="mainChart" class="main-chart" alt="차트 로딩 중…">
+      <div id="chartStage" class="chart-stage">
+        <img id="mainChart" class="main-chart" alt="차트 로딩 중…">
+        <div id="chartOverlay" class="chart-overlay">
+          <div id="chartEventLayer" class="chart-event-layer"></div>
+          <div id="chartCrosshairX" class="chart-crosshair chart-crosshair-x hidden"></div>
+          <div id="chartCrosshairY" class="chart-crosshair chart-crosshair-y hidden"></div>
+          <div id="chartXAxisLabel" class="chart-axis-label chart-axis-x hidden"></div>
+          <div id="chartYAxisLabel" class="chart-axis-label chart-axis-y hidden"></div>
+          <div id="chartHoverTooltip" class="chart-hover-tooltip hidden"></div>
+        </div>
+      </div>
     </div>
 
     <!-- 오른쪽: 사이드바 -->

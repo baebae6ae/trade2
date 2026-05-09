@@ -54,6 +54,15 @@ BEAR     = "#C41D3A"
 BULL_T   = "#0D7F3C80"
 BEAR_T   = "#C41D3A80"
 
+EVENT_EXPLANATIONS = {
+    "breakout": "직전 20봉 고점을 종가 기준으로 돌파했고, 거래량이 동반된 구간입니다.",
+    "volume_spike": "최근 20봉 평균 대비 거래량이 크게 증가한 봉입니다.",
+    "ema20_reclaim": "직전 봉까지 EMA20 아래에 있다가 다시 EMA20 위로 회복한 구간입니다.",
+    "trailing_stop": "최근 20봉 고점과 ATR을 기준으로 계산한 추적손절 가이드입니다.",
+    "macd_golden": "MACD가 시그널선을 상향 돌파한 골든크로스입니다.",
+    "macd_dead": "MACD가 시그널선을 하향 이탈한 데드크로스입니다.",
+}
+
 
 def _fig_to_b64(fig) -> str:
     buf = io.BytesIO()
@@ -62,9 +71,179 @@ def _fig_to_b64(fig) -> str:
     return base64.b64encode(buf.read()).decode("utf-8")
 
 
+def _recent_true_indices(mask: pd.Series, limit: int = 3, lookback: int = 90) -> list[int]:
+    if mask is None or len(mask) == 0:
+        return []
+    values = mask.fillna(False).to_numpy(dtype=bool)
+    lower = max(0, len(values) - lookback)
+    indices = [idx for idx, flag in enumerate(values) if flag and idx >= lower]
+    return indices[-limit:]
+
+
+def _annotate_price_events(ax, df: pd.DataFrame, indices: list[int], label: str,
+                           color: str, above: bool = True) -> None:
+    for offset, idx in enumerate(indices):
+        row = df.iloc[idx]
+        if above:
+            marker_y = float(row["High"])
+            text_y = marker_y * (1.012 + offset * 0.006)
+            marker = "^"
+            va = "bottom"
+        else:
+            marker_y = float(row["Low"])
+            text_y = marker_y * (0.988 - offset * 0.006)
+            marker = "v"
+            va = "top"
+        ax.scatter(idx, marker_y, s=42, marker=marker, color=color,
+                   edgecolors=BG, linewidths=0.6, zorder=6)
+        ax.text(idx, text_y, label, color=color, fontsize=6.8,
+                ha="center", va=va, zorder=7,
+                bbox=dict(facecolor=BG, edgecolor="none", alpha=0.72, pad=1.4))
+
+
+def _annotate_macd_events(ax, df: pd.DataFrame, cross_up: pd.Series, cross_down: pd.Series) -> None:
+    for idx in _recent_true_indices(cross_up, limit=2, lookback=120):
+        y = max(float(df["MACD"].iloc[idx]), float(df["MACD_SIG"].iloc[idx]))
+        ax.scatter(idx, y, s=34, marker="^", color=BULL, zorder=6)
+        ax.text(idx, y, "골든", color=BULL, fontsize=6.5, ha="center", va="bottom")
+    for idx in _recent_true_indices(cross_down, limit=2, lookback=120):
+        y = min(float(df["MACD"].iloc[idx]), float(df["MACD_SIG"].iloc[idx]))
+        ax.scatter(idx, y, s=34, marker="v", color=BEAR, zorder=6)
+        ax.text(idx, y, "데드", color=BEAR, fontsize=6.5, ha="center", va="top")
+
+
+def _build_chart_events(df: pd.DataFrame) -> tuple[pd.Series | None, list[dict], pd.Series, pd.Series, pd.Series, pd.Series, pd.Series]:
+    volume_ratio = pd.Series(np.nan, index=df.index, dtype=float)
+    if "Vol20" in df.columns:
+        volume_ratio = df["Volume"] / df["Vol20"].replace(0, np.nan)
+
+    trailing_stop = None
+    if "ATR14" in df.columns:
+        trailing_stop = df["High"].rolling(20, min_periods=10).max() - (df["ATR14"] * 2.0)
+
+    breakout_mask = pd.Series(False, index=df.index)
+    if len(df) >= 20:
+        prior_high20 = df["High"].rolling(20, min_periods=10).max().shift(1)
+        breakout_mask = prior_high20.notna() & (df["Close"] >= prior_high20)
+        if volume_ratio.notna().any():
+            breakout_mask &= volume_ratio >= 1.15
+
+    ema_reclaim_mask = pd.Series(False, index=df.index)
+    if "EMA20" in df.columns:
+        ema_reclaim_mask = (
+            (df["Close"].shift(1) < df["EMA20"].shift(1))
+            & (df["Close"] >= df["EMA20"])
+            & (df["Close"] >= df["Open"])
+        )
+
+    volume_spike_mask = pd.Series(False, index=df.index)
+    if volume_ratio.notna().any():
+        volume_spike_mask = (
+            (volume_ratio >= 1.8)
+            & (df["Close"] >= df["Open"])
+            & ~breakout_mask.fillna(False)
+        )
+
+    cross_up = pd.Series(False, index=df.index)
+    cross_down = pd.Series(False, index=df.index)
+    if "MACD" in df.columns and "MACD_SIG" in df.columns:
+        cross_up = (df["MACD"] >= df["MACD_SIG"]) & (df["MACD"].shift(1) < df["MACD_SIG"].shift(1))
+        cross_down = (df["MACD"] < df["MACD_SIG"]) & (df["MACD"].shift(1) >= df["MACD_SIG"].shift(1))
+
+    events = []
+    for idx in _recent_true_indices(breakout_mask, limit=3, lookback=120):
+        events.append({
+            "type": "breakout",
+            "label": "돌파",
+            "panel": "price",
+            "idx": idx,
+            "value": float(df["High"].iloc[idx]),
+            "date": df.index[idx].strftime("%Y-%m-%d"),
+            "color": BULL,
+        })
+    for idx in _recent_true_indices(volume_spike_mask, limit=2, lookback=90):
+        events.append({
+            "type": "volume_spike",
+            "label": "거래량 급증",
+            "panel": "volume",
+            "idx": idx,
+            "value": float(df["Volume"].iloc[idx]),
+            "date": df.index[idx].strftime("%Y-%m-%d"),
+            "color": "#8D6E63",
+        })
+    for idx in _recent_true_indices(ema_reclaim_mask & ~breakout_mask.fillna(False), limit=2, lookback=90):
+        events.append({
+            "type": "ema20_reclaim",
+            "label": "EMA20 회복",
+            "panel": "price",
+            "idx": idx,
+            "value": float(df["Low"].iloc[idx]),
+            "date": df.index[idx].strftime("%Y-%m-%d"),
+            "color": "#FF6F00",
+        })
+    if trailing_stop is not None and len(df):
+        events.append({
+            "type": "trailing_stop",
+            "label": "추적손절",
+            "panel": "price",
+            "idx": len(df) - 1,
+            "value": float(trailing_stop.iloc[-1]),
+            "date": df.index[-1].strftime("%Y-%m-%d"),
+            "color": "#6D4C41",
+        })
+    for idx in _recent_true_indices(cross_up, limit=2, lookback=120):
+        events.append({
+            "type": "macd_golden",
+            "label": "MACD 골든",
+            "panel": "macd",
+            "idx": idx,
+            "value": max(float(df["MACD"].iloc[idx]), float(df["MACD_SIG"].iloc[idx])),
+            "date": df.index[idx].strftime("%Y-%m-%d"),
+            "color": BULL,
+        })
+    for idx in _recent_true_indices(cross_down, limit=2, lookback=120):
+        events.append({
+            "type": "macd_dead",
+            "label": "MACD 데드",
+            "panel": "macd",
+            "idx": idx,
+            "value": min(float(df["MACD"].iloc[idx]), float(df["MACD_SIG"].iloc[idx])),
+            "date": df.index[idx].strftime("%Y-%m-%d"),
+            "color": BEAR,
+        })
+    return trailing_stop, events, breakout_mask, ema_reclaim_mask, volume_spike_mask, cross_up, cross_down
+
+
+def _axis_meta(ax, fig, y_invert: bool = True) -> dict:
+    box = ax.get_position()
+    top = 1.0 - float(box.y1) if y_invert else float(box.y0)
+    bottom = 1.0 - float(box.y0) if y_invert else float(box.y1)
+    return {
+        "left": float(box.x0),
+        "right": float(box.x1),
+        "top": top,
+        "bottom": bottom,
+        "width": float(box.width),
+        "height": float(box.height),
+        "x_min": float(ax.get_xlim()[0]),
+        "x_max": float(ax.get_xlim()[1]),
+        "y_min": float(ax.get_ylim()[0]),
+        "y_max": float(ax.get_ylim()[1]),
+    }
+
+
+def _event_meta(fig, ax, event: dict) -> dict:
+    x_fig, y_fig = fig.transFigure.inverted().transform(ax.transData.transform((event["idx"], event["value"])))
+    payload = dict(event)
+    payload["x"] = float(x_fig)
+    payload["y"] = 1.0 - float(y_fig)
+    payload["description"] = EVENT_EXPLANATIONS.get(event["type"], "")
+    return payload
+
+
 def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
                       ticker: str, display_bars: int = 220,
-                      timeframe: str = "daily") -> str:
+                      timeframe: str = "daily", include_meta: bool = False):
     """
     캔들 + 이동평균 + 볼린저 + 일목균형표 + 거래량 + MACD + RSI + FIS
     → base64 PNG 문자열 반환
@@ -160,6 +339,15 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
         ax_c.plot(xs, df["ICH_KIJUN"].values,
                   color="#2196F3", lw=0.85, ls="-.", label="기준", zorder=4)
 
+    trailing_stop, events, breakout_mask, ema_reclaim_mask, volume_spike_mask, cross_up, cross_down = _build_chart_events(df)
+
+    if trailing_stop is not None:
+        ax_c.plot(xs, trailing_stop.values, color="#6D4C41", lw=0.9,
+                  ls=":", alpha=0.9, label="추적손절", zorder=3)
+
+    _annotate_price_events(ax_c, df, _recent_true_indices(breakout_mask, limit=3, lookback=120), "돌파", BULL, above=True)
+    _annotate_price_events(ax_c, df, _recent_true_indices(ema_reclaim_mask & ~breakout_mask.fillna(False), limit=2, lookback=90), "EMA20 회복", "#FF6F00", above=False)
+
     ax_c.set_xlim(-1, n + 1)
     ax_c.legend(loc="upper left", fontsize=6.5,
                 facecolor=BG2, edgecolor=GRID,
@@ -171,6 +359,10 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
         ax_v.bar(i, row["Volume"], color=color, width=0.7)
     if "Vol20" in df.columns:
         ax_v.plot(xs, df["Vol20"].values, color=TEXT, lw=0.8)
+    for idx in _recent_true_indices(volume_spike_mask, limit=2, lookback=90):
+        y = float(df["Volume"].iloc[idx])
+        ax_v.scatter(idx, y, s=34, marker="^", color="#8D6E63", zorder=6)
+        ax_v.text(idx, y, "거래량", color="#8D6E63", fontsize=6.5, ha="center", va="bottom")
     ax_v.set_ylabel("거래량", color=TEXT, fontsize=8)
     ax_v.yaxis.set_ticklabels([])
 
@@ -182,6 +374,7 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
         colors_h = [BULL if v >= 0 else BEAR for v in hist]
         ax_m.bar(xs, hist, color=colors_h, width=0.7, alpha=0.6)
         ax_m.axhline(0, color=GRID, lw=0.6)
+        _annotate_macd_events(ax_m, df, cross_up, cross_down)
         ax_m.legend(loc="upper left", fontsize=6,
                     facecolor=BG2, edgecolor=GRID,
                     labelcolor="#222222", ncol=2, framealpha=0.9)
@@ -224,7 +417,32 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
               bbox=dict(facecolor=BG, edgecolor="none", alpha=0.6, pad=2))
 
     b64 = _fig_to_b64(fig)
+    if include_meta:
+        panels = {
+            "price": _axis_meta(ax_c, fig),
+            "volume": _axis_meta(ax_v, fig),
+            "macd": _axis_meta(ax_m, fig),
+            "fis": _axis_meta(ax_f, fig),
+        }
+        interaction_meta = {
+            "count": n,
+            "dates": [ts.strftime("%Y-%m-%d") for ts in df.index],
+            "panels": panels,
+            "plot_area": {
+                "left": panels["price"]["left"],
+                "right": panels["price"]["right"],
+                "top": panels["price"]["top"],
+                "bottom": panels["fis"]["bottom"],
+            },
+            "events": [
+                _event_meta(fig, {"price": ax_c, "volume": ax_v, "macd": ax_m}[event["panel"]], event)
+                for event in events
+                if event["panel"] in {"price", "volume", "macd"}
+            ],
+        }
     plt.close(fig)
+    if include_meta:
+        return b64, interaction_meta
     return b64
 
 

@@ -83,6 +83,10 @@ function goAnalyze(ticker) {
   window.location.href = `/analyze?ticker=${encodeURIComponent(ticker)}`;
 }
 
+function looksLikeTicker(query) {
+  return /^[A-Za-z0-9.^=-]+$/.test((query || "").trim());
+}
+
 // ── 검색 ──────────────────────────────────────────────
 let _searchTimer = null;
 const _searchInput    = () => document.getElementById("searchInput");
@@ -121,9 +125,22 @@ async function _execSearch(q) {
   } catch (e) { closeDropdown(); }
 }
 
-function doSearch() {
+async function doSearch() {
   const v = _searchInput()?.value.trim();
-  if (v) goAnalyze(v);
+  if (!v) return;
+  if (looksLikeTicker(v)) {
+    goAnalyze(v);
+    return;
+  }
+  try {
+    const data = await fetch(`/api/search?q=${encodeURIComponent(v)}`).then(r => r.json());
+    const first = data?.ok ? data.results?.[0] : null;
+    if (first?.symbol) {
+      goAnalyze(first.symbol);
+      return;
+    }
+  } catch (e) {}
+  goAnalyze(v);
 }
 function closeDropdown() {
   _searchDropdown()?.classList.add("hidden");

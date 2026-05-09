@@ -1,3 +1,3 @@
-"""
-api/__init__.py
-"""
+﻿from .server import create_app
+
+app = create_app()

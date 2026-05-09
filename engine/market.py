@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 from engine.data import fetch_market_index, resample_ohlcv
+from engine.universe import MARKET_MAP
 
 INDICES = {
     "KR": [
@@ -191,8 +192,6 @@ def get_market_map_data(region: str) -> dict:
 # ── 52주 신고가 (배치) ────────────────────────────────────
 
 def get_52week_highs(market_key: str) -> list:
-    from engine.scanner import MARKET_MAP
-
     stocks = MARKET_MAP.get(market_key.lower(), [])
     if not stocks:
         return []

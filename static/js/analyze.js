@@ -7,6 +7,165 @@ const COL_LABELS = {
   ICH_SENKOU_A: "선행A", ICH_SENKOU_B: "선행B",
 };
 
+let _chartMeta = null;
+let _chartOverlayBound = false;
+
+function _chartEls() {
+  return {
+    overlay: document.getElementById("chartOverlay"),
+    eventLayer: document.getElementById("chartEventLayer"),
+    crossX: document.getElementById("chartCrosshairX"),
+    crossY: document.getElementById("chartCrosshairY"),
+    xLabel: document.getElementById("chartXAxisLabel"),
+    yLabel: document.getElementById("chartYAxisLabel"),
+    tooltip: document.getElementById("chartHoverTooltip"),
+  };
+}
+
+function _clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function _pct(value) {
+  return `${(value * 100).toFixed(4)}%`;
+}
+
+function _chartValueText(panelKey, value) {
+  if (panelKey === "volume") return fmtVol(Math.max(0, value));
+  if (panelKey === "price") return fmt(value, 2);
+  return Number(value || 0).toFixed(2);
+}
+
+function _hideChartTooltip() {
+  const { tooltip } = _chartEls();
+  if (!tooltip) return;
+  tooltip.classList.add("hidden");
+}
+
+function _showChartTooltip(html, clientX, clientY) {
+  const { overlay, tooltip } = _chartEls();
+  if (!overlay || !tooltip) return;
+  const rect = overlay.getBoundingClientRect();
+  const localX = clientX - rect.left;
+  const localY = clientY - rect.top;
+  tooltip.innerHTML = html;
+  tooltip.classList.remove("hidden");
+
+  const pad = 14;
+  const tipW = tooltip.offsetWidth;
+  const tipH = tooltip.offsetHeight;
+  let left = localX + pad;
+  let top = localY + pad;
+  if (left + tipW > rect.width - 8) left = localX - tipW - pad;
+  if (top + tipH > rect.height - 8) top = localY - tipH - pad;
+  tooltip.style.left = `${_clamp(left, 8, Math.max(8, rect.width - tipW - 8))}px`;
+  tooltip.style.top = `${_clamp(top, 8, Math.max(8, rect.height - tipH - 8))}px`;
+}
+
+function _hideChartCrosshair() {
+  const { crossX, crossY, xLabel, yLabel } = _chartEls();
+  [crossX, crossY, xLabel, yLabel].forEach(el => el?.classList.add("hidden"));
+}
+
+function _bindChartOverlay() {
+  if (_chartOverlayBound) return;
+  const { overlay } = _chartEls();
+  if (!overlay) return;
+
+  overlay.addEventListener("mousemove", e => {
+    if (!_chartMeta) return;
+    const { crossX, crossY, xLabel, yLabel } = _chartEls();
+    const rect = overlay.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const plot = _chartMeta.plot_area;
+    if (x < plot.left || x > plot.right || y < plot.top || y > plot.bottom) {
+      _hideChartCrosshair();
+      return;
+    }
+
+    let active = null;
+    for (const [panelKey, panel] of Object.entries(_chartMeta.panels || {})) {
+      if (x >= panel.left && x <= panel.right && y >= panel.top && y <= panel.bottom) {
+        active = { key: panelKey, ...panel };
+        break;
+      }
+    }
+    if (!active) {
+      _hideChartCrosshair();
+      return;
+    }
+
+    const idx = _clamp(
+      Math.round(((x - plot.left) / Math.max(0.0001, plot.right - plot.left)) * ((_chartMeta.count || 1) - 1)),
+      0,
+      Math.max(0, (_chartMeta.count || 1) - 1)
+    );
+    const date = _chartMeta.dates?.[idx] || "";
+    const relY = 1 - ((y - active.top) / Math.max(0.0001, active.height));
+    const value = active.y_min + relY * (active.y_max - active.y_min);
+
+    crossX.style.left = _pct(x);
+    crossX.style.top = _pct(plot.top);
+    crossX.style.height = _pct(plot.bottom - plot.top);
+    crossX.classList.remove("hidden");
+
+    crossY.style.left = _pct(active.left);
+    crossY.style.top = _pct(y);
+    crossY.style.width = _pct(active.right - active.left);
+    crossY.classList.remove("hidden");
+
+    xLabel.textContent = date;
+    xLabel.style.left = _pct(x);
+    xLabel.style.top = _pct(plot.bottom);
+    xLabel.classList.remove("hidden");
+
+    yLabel.textContent = _chartValueText(active.key, value);
+    yLabel.style.left = _pct(active.right);
+    yLabel.style.top = _pct(y);
+    yLabel.classList.remove("hidden");
+  });
+
+  overlay.addEventListener("mouseleave", () => {
+    _hideChartCrosshair();
+    _hideChartTooltip();
+  });
+
+  _chartOverlayBound = true;
+}
+
+function _renderChartOverlay(meta) {
+  _chartMeta = meta || null;
+  const { eventLayer } = _chartEls();
+  if (!eventLayer) return;
+  eventLayer.innerHTML = "";
+  _hideChartCrosshair();
+  _hideChartTooltip();
+  _bindChartOverlay();
+  if (!_chartMeta) return;
+
+  (_chartMeta.events || []).forEach(ev => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chart-event-badge";
+    btn.textContent = ev.label;
+    btn.style.left = _pct(ev.x);
+    btn.style.top = _pct(ev.y);
+    btn.style.setProperty("--badge-color", ev.color || "#303030");
+
+    const tooltipHtml = `
+      <div class="chart-tooltip-title">${ev.label}</div>
+      <div class="chart-tooltip-meta">날짜: ${ev.date}</div>
+      <div class="chart-tooltip-meta">값: ${_chartValueText(ev.panel, ev.value)}</div>
+      <div class="chart-tooltip-desc">${ev.description || ""}</div>`;
+
+    btn.addEventListener("mouseenter", e => _showChartTooltip(tooltipHtml, e.clientX, e.clientY));
+    btn.addEventListener("mousemove", e => _showChartTooltip(tooltipHtml, e.clientX, e.clientY));
+    btn.addEventListener("mouseleave", () => _hideChartTooltip());
+    eventLayer.appendChild(btn);
+  });
+}
+
 function renderEntryScore(entry, l, rangeLabel) {
     const score      = entry?.score ?? 0;
     const components = entry?.components || {};
@@ -472,6 +631,7 @@ async function loadAnalysis(ticker) {
 
     // 차트
     document.getElementById("mainChart").src = "data:image/png;base64," + d.chart;
+    _renderChartOverlay(d.chart_meta);
 
     // 지표 칩
     renderChips(j, l);
