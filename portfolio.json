@@ -1,0 +1,17 @@
+{
+  "positions": {
+    "077970.KS": {
+      "name": "STX Engine Co.,Ltd.",
+      "quantity": 16,
+      "avg_price": 58431.0,
+      "max_trailing_stop": null,
+      "buys": [
+        {
+          "date": "2026-05-09 06:12",
+          "qty": 16,
+          "price": 58431.0
+        }
+      ]
+    }
+  }
+}
