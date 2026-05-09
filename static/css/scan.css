@@ -1,361 +1,270 @@
-﻿/* static/css/scan.css */
+﻿/* ═══════════════════════════════════════════════
+   CFIE Design System — scan.css
+═══════════════════════════════════════════════ */
 
+/* ── Hero ────────────────────────────────────── */
 .scan-hero {
-  padding: 32px 0 20px;
+  padding: 40px 0 24px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 28px;
+  margin-bottom: 32px;
+  position: relative;
 }
-.scan-hero h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
-.scan-hero p  { font-size: 14px; color: var(--text1); }
+.scan-hero h1 {
+  font-size: 26px; font-weight: 900;
+  letter-spacing: -1px; margin-bottom: 6px;
+  background: linear-gradient(135deg, var(--text1) 0%, var(--text2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.scan-hero p { font-size: 14px; color: var(--text2); }
 
-/* 탭 */
-.market-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
-.mtab {
+/* ── Scan Type Tabs ──────────────────────────── */
+.scan-type-tabs {
+  display: flex; gap: 6px; margin-bottom: 24px;
+}
+.stab {
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 13px; font-weight: 700;
-  color: var(--text1);
+  color: var(--text2);
   background: var(--bg2);
   border: 1px solid var(--border);
-  transition: all 0.15s;
+  transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
   cursor: pointer;
 }
-.mtab:hover { color: var(--text1); border-color: var(--text3); }
-.mtab.active { color: var(--accent); background: rgba(124,111,247,0.12); border-color: rgba(124,111,247,0.35); }
+.stab:hover { color: var(--text1); border-color: rgba(148,163,184,0.25); }
+.stab.active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(129,140,248,0.2) 0%, rgba(34,211,238,0.1) 100%);
+  border-color: rgba(129,140,248,0.4);
+  box-shadow: 0 0 12px rgba(129,140,248,0.15);
+}
 
-/* 스캔 버튼 */
+/* ── Kumo Desc ───────────────────────────────── */
+.kumo-desc {
+  background: linear-gradient(135deg, rgba(129,140,248,0.07) 0%, rgba(34,211,238,0.04) 100%);
+  border: 1px solid rgba(129,140,248,0.2);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  font-size: 13px; color: var(--text2);
+  line-height: 1.7; margin-bottom: 24px;
+}
+.kumo-desc strong { color: var(--accent); }
+
+/* ── Market Tabs ─────────────────────────────── */
+.market-tabs {
+  display: flex; gap: 6px; margin-bottom: 24px;
+}
+.mtab {
+  padding: 8px 22px;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 700;
+  color: var(--text2);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+  cursor: pointer;
+}
+.mtab:hover { color: var(--text1); border-color: rgba(148,163,184,0.25); }
+.mtab.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-color: rgba(129,140,248,0.35);
+}
+
+/* ── Scan Button ─────────────────────────────── */
 .scan-btn {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 24px;
-  background: var(--accent);
-  color: white;
-  border-radius: 9px;
+  padding: 11px 28px;
+  background: linear-gradient(135deg, #818CF8 0%, #6366F1 100%);
+  color: white; border: none;
+  border-radius: 10px;
   font-size: 14px; font-weight: 700;
-  transition: opacity 0.15s;
-  margin-bottom: 24px;
+  transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+  margin-bottom: 28px;
+  box-shadow: 0 4px 20px rgba(129,140,248,0.35);
+  cursor: pointer;
 }
-.scan-btn:hover { opacity: 0.85; }
-.scan-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.scan-btn .spin { width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; }
+.scan-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(129,140,248,0.5);
+}
+.scan-btn:active { transform: translateY(0); }
+.scan-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+.scan-btn .spin {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
 
-/* 결과 헤더 */
+/* ── Result Header ───────────────────────────── */
 .result-header {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
 }
 .result-count {
-  background: var(--accent);
+  background: linear-gradient(135deg, #818CF8 0%, #6366F1 100%);
   color: white;
   font-size: 12px; font-weight: 700;
-  padding: 3px 10px; border-radius: 20px;
+  padding: 4px 12px; border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(129,140,248,0.3);
 }
-.result-note { font-size: 12px; color: var(--text2); }
+.result-note { font-size: 12px; color: var(--text3); }
 
-/* 후보 그리드 */
+/* ── Candidate Grid ──────────────────────────── */
 .candidates-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 14px;
 }
+
+/* ── Candidate Card ──────────────────────────── */
 .candidate-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 18px 20px;
-  transition: transform 0.15s, box-shadow 0.2s;
+  border-radius: var(--radius-lg);
+  padding: 18px 20px 16px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+  overflow: hidden;
 }
-.candidate-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
-.cc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-.cc-name { font-size: 15px; font-weight: 800; }
-.cc-ticker { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.candidate-card::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.candidate-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(148,163,184,0.22);
+  box-shadow: 0 10px 36px rgba(0,0,0,0.5), 0 0 0 1px rgba(129,140,248,0.08);
+}
+.candidate-card:hover::before { opacity: 1; }
+
+.cc-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 10px;
+}
+.cc-name   { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; }
+.cc-ticker { font-size: 12px; color: var(--text3); margin-top: 3px; font-weight: 500; }
+.cc-label  { font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+.cc-summary {
+  font-size: 12px; color: var(--text2); line-height: 1.6;
+  margin-bottom: 12px;
+}
+
 .cc-fis-badge {
   font-size: 11px; font-weight: 800;
   padding: 4px 10px; border-radius: 20px;
-  color: white; white-space: nowrap;
-}
-.cc-label { font-size: 12px; font-weight: 700; margin-bottom: 10px; }
-.cc-summary { font-size: 12px; color: var(--text2); line-height: 1.55; margin-bottom: 14px; border-left: 2px solid var(--border); padding-left: 10px; }
-.cc-scores { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-.cs-chip {
-  font-size: 11px;
-  padding: 3px 9px; border-radius: 20px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  color: var(--text2);
-}
-.cs-chip.pos { color: var(--bull); border-color: rgba(229,57,53,0.3); background: rgba(229,57,53,0.08); }
-.cs-chip.neg { color: var(--bear); border-color: rgba(21,101,192,0.3); background: rgba(21,101,192,0.08); }
-.cc-actions { display: flex; gap: 8px; }
-.cc-btn {
-  flex: 1; height: 36px; border-radius: 8px;
-  font-size: 12px; font-weight: 700;
-  transition: all 0.15s;
-}
-.cc-btn-analyze {
-  background: var(--bg3); border: 1px solid var(--border);
-  color: var(--text2);
-}
-.cc-btn-analyze:hover { color: var(--accent); border-color: var(--accent); }
-.cc-btn-buy {
-  background: rgba(229,57,53,0.12);
-  border: 1px solid rgba(229,57,53,0.3);
-  color: var(--bull);
-}
-.cc-btn-buy:hover { background: rgba(229,57,53,0.22); }
-
-/* 빈 결과 */
-.no-result {
-  text-align: center; padding: 60px 24px;
-  color: var(--text3); font-size: 14px;
-}
-.no-result .nr-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
-
-/* ── 상세 설명 토글 ── */
-.det-toggle {
-  width: 100%;
-  margin-top: 12px;
-  padding: 6px 0;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text3);
-  background: none;
-  border: 1px dashed var(--border);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  text-align: center;
-}
-.det-toggle:hover { color: var(--accent); border-color: var(--accent); }
-
-.det-body {
-  display: none;
-  margin-top: 10px;
-  border-top: 1px solid var(--border);
-  padding-top: 10px;
-}
-
-.det-comp {
-  margin-bottom: 10px;
-  padding: 8px 10px;
-  background: var(--bg3);
-  border-radius: 7px;
-}
-.det-comp-hd {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 3px;
-}
-.det-comp-label { font-size: 11px; font-weight: 700; color: var(--text2); }
-.det-comp-score { font-size: 12px; font-weight: 800; }
-.det-comp-desc  { font-size: 11px; color: var(--text3); line-height: 1.5; }
-
-.det-setup-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
-.det-setup-chip {
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 10px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  color: var(--text3);
-}
-.det-setup-chip.best {
-  background: rgba(46,160,67,0.12);
-  border-color: rgba(46,160,67,0.35);
-  color: #56d364;
-  font-weight: 700;
-}
-
-.det-metrics {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-  padding: 6px 10px;
-  background: var(--bg3);
-  border-radius: 7px;
-}
-.det-metrics span {
-  font-size: 11px;
-  color: var(--text3);
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
-/* ── 차트 분석 모달 ── */
+/* ── Score Chips ─────────────────────────────── */
+.cc-scores { display: flex; flex-wrap: wrap; gap: 5px; }
+.cs-chip {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 6px;
+  background: var(--bg3);
+  color: var(--text2);
+  border: 1px solid var(--border);
+}
+.cs-chip.pos { color: var(--bull); background: var(--bull-bg); border-color: rgba(244,63,94,0.2); }
+.cs-chip.neg { color: var(--bear); background: var(--bear-bg); border-color: rgba(96,165,250,0.2); }
+
+/* ── CC Action ───────────────────────────────── */
+.cc-actions {
+  display: flex; gap: 6px; margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border2);
+}
+.cc-action-btn {
+  flex: 1; padding: 7px; border-radius: 7px;
+  font-size: 12px; font-weight: 700;
+  text-align: center; cursor: pointer;
+  transition: all 0.18s;
+}
+.cc-action-chart {
+  background: rgba(129,140,248,0.1); color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.2);
+}
+.cc-action-chart:hover { background: rgba(129,140,248,0.2); }
+.cc-action-buy {
+  background: linear-gradient(135deg, rgba(129,140,248,0.2) 0%, rgba(99,102,241,0.2) 100%);
+  color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.3);
+}
+.cc-action-buy:hover { background: rgba(129,140,248,0.3); }
+
+/* ── No Result ───────────────────────────────── */
+.no-result {
+  padding: 64px 32px;
+  text-align: center;
+  color: var(--text3);
+}
+.nr-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.5; }
+
+/* ── Chart Modal ─────────────────────────────── */
 .chart-modal-box {
   background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  width: min(720px, 96vw);
+  border: 1px solid rgba(148,163,184,0.12);
+  border-radius: var(--radius-xl);
+  width: 90%;
+  max-width: 920px;
   max-height: 90vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(129,140,248,0.06);
+  animation: slideUp 0.25s cubic-bezier(0.4,0,0.2,1);
 }
 .chart-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 18px 20px 14px;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 22px;
   border-bottom: 1px solid var(--border);
-  gap: 12px;
+  background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
 }
-.chart-modal-title { font-size: 17px; font-weight: 800; }
-#chartModalBody { padding: 16px 20px 20px; }
+.chart-modal-title { font-size: 16px; font-weight: 800; color: var(--text1); letter-spacing: -0.3px; }
+.modal-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
 
 .cmo-full-btn {
-  display: inline-flex; align-items: center;
-  padding: 0 12px; height: 32px;
-  font-size: 11px; font-weight: 700;
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 7px; color: var(--accent);
-  text-decoration: none; white-space: nowrap;
-  transition: background 0.15s;
+  padding: 6px 14px; border-radius: 7px;
+  font-size: 12px; font-weight: 700;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.25);
+  transition: all 0.18s;
 }
-.cmo-full-btn:hover { background: rgba(124,111,247,0.12); }
+.cmo-full-btn:hover { background: rgba(129,140,248,0.2); }
 
 .cmo-close-btn {
-  width: 32px; height: 32px;
-  font-size: 14px;
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 7px; color: var(--text2);
-  transition: background 0.15s;
-}
-.cmo-close-btn:hover { background: rgba(229,57,53,0.12); color: var(--bull); }
-
-.cmo-stat-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-.cmo-badge {
-  font-size: 11px; font-weight: 800;
-  padding: 3px 10px; border-radius: 20px;
-  color: white; white-space: nowrap;
-}
-.cmo-chart-img {
-  width: 100%;
-  border-radius: 8px;
-  display: block;
-  margin-bottom: 12px;
-}
-.cmo-summary {
-  font-size: 13px; color: var(--text2); line-height: 1.6;
-  border-left: 2px solid var(--border); padding-left: 10px;
-  margin-bottom: 6px;
-}
-.cmo-summary2 {
-  font-size: 12px; color: var(--text3); line-height: 1.5;
-  padding-left: 12px;
-}
-
-
-
-/* ── 스캔 매수 모달 ─────────────────────────────────────── */
-.modal-box-wide { max-width: 480px; }
-.modal-scenario-chip {
-  background: #1a472a; color: #56d364;
-  border: 1px solid #2ea043; border-radius: 20px;
-  padding: 3px 12px; font-size: 12px; font-weight: 700; white-space: nowrap;
-}
-.mbuy-qty-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 0; border-bottom: 1px solid var(--border2);
-}
-.mbuy-qty-label { font-size: 13px; color: var(--text2); min-width: 60px; }
-.mbuy-qty-input { width: 90px; padding: 6px 10px; border-radius: 6px;
-  border: 1px solid var(--border2); background: var(--bg3); color: var(--text1);
-  font-size: 15px; font-weight: 700; text-align: right; }
-.mbuy-invest { font-size: 13px; color: var(--text2); margin-left: auto; }
-.mbuy-price-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 0; border-bottom: 1px solid var(--border2);
-}
-.mbuy-price-label { font-size: 13px; color: var(--text2); min-width: 60px; }
-.mbuy-price-input { width: 120px; padding: 6px 10px; border-radius: 6px;
-  border: 1px solid var(--border2); background: var(--bg3); color: var(--text1);
-  font-size: 15px; font-weight: 700; text-align: right; }
-.mbuy-price-sub { font-size: 11px; color: var(--text3); margin-left: auto; }
-.mbuy-trailing-preview {
-  margin-top: 12px; border-radius: 8px;
-  border: 1px solid var(--border2); background: var(--bg2); padding: 12px;
-}
-.mbuy-trailing-label  { font-size: 11px; color: var(--text3); margin-bottom: 8px; }
-.mbuy-trailing-main   { display: flex; flex-direction: column; gap: 6px; }
-.mbuy-trailing-item   { display: flex; align-items: center; gap: 8px; }
-.mbuy-trailing-key    { font-size: 11px; color: var(--text3); min-width: 80px; }
-.mbuy-trailing-val    { font-size: 15px; font-weight: 700; color: var(--text1); }
-.mbuy-trailing-pct    { font-size: 12px; color: #c62828; }
-.mbuy-trailing-signal { font-size: 11px; color: var(--text2); }
-.mbuy-trailing-desc   { font-size: 10px; color: var(--text3); margin-top: 8px; }
-
-
-/* ── 스캔 매수 모달 ─────────────────────────────────────── */
-.modal-box-wide { max-width: 480px; }
-.modal-scenario-chip {
-  background: #1a472a; color: #56d364;
-  border: 1px solid #2ea043; border-radius: 20px;
-  padding: 3px 12px; font-size: 12px; font-weight: 700; white-space: nowrap;
-}
-.mbuy-qty-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 0; border-bottom: 1px solid var(--border2);
-}
-.mbuy-qty-label { font-size: 13px; color: var(--text2); min-width: 60px; }
-.mbuy-qty-input { width: 90px; padding: 6px 10px; border-radius: 6px;
-  border: 1px solid var(--border2); background: var(--bg3); color: var(--text1);
-  font-size: 15px; font-weight: 700; text-align: right; }
-.mbuy-invest { font-size: 13px; color: var(--text2); margin-left: auto; }
-.mbuy-price-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 0; border-bottom: 1px solid var(--border2);
-}
-.mbuy-price-label { font-size: 13px; color: var(--text2); min-width: 60px; }
-.mbuy-price-input { width: 120px; padding: 6px 10px; border-radius: 6px;
-  border: 1px solid var(--border2); background: var(--bg3); color: var(--text1);
-  font-size: 15px; font-weight: 700; text-align: right; }
-.mbuy-price-sub { font-size: 11px; color: var(--text3); margin-left: auto; }
-.mbuy-trailing-preview {
-  margin-top: 12px; border-radius: 8px;
-  border: 1px solid var(--border2); background: var(--bg2); padding: 12px;
-}
-.mbuy-trailing-label  { font-size: 11px; color: var(--text3); margin-bottom: 8px; }
-.mbuy-trailing-main   { display: flex; flex-direction: column; gap: 6px; }
-.mbuy-trailing-item   { display: flex; align-items: center; gap: 8px; }
-.mbuy-trailing-key    { font-size: 11px; color: var(--text3); min-width: 80px; }
-.mbuy-trailing-val    { font-size: 15px; font-weight: 700; color: var(--text1); }
-.mbuy-trailing-pct    { font-size: 12px; color: #c62828; }
-.mbuy-trailing-signal { font-size: 11px; color: var(--text2); }
-.mbuy-trailing-desc   { font-size: 10px; color: var(--text3); margin-top: 8px; }
-
-
-/* 스캔 유형 탭 */
-.scan-type-tabs {
-  display: flex; gap: 8px; margin-bottom: 20px;
-}
-.stab {
-  padding: 7px 18px;
-  border-radius: 8px;
-  font-size: 13px; font-weight: 700;
-  color: var(--text2);
-  background: var(--bg2);
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 7px; font-size: 16px;
+  color: var(--text3); background: var(--bg3);
   border: 1px solid var(--border);
   transition: all 0.15s;
-  cursor: pointer;
 }
-.stab:hover  { color: var(--text1); border-color: var(--text3); }
-.stab.active { color: #fff; background: #5a4fcf; border-color: #5a4fcf; }
+.cmo-close-btn:hover { color: var(--text1); background: var(--bg4); }
 
-/* 쿠모 설명 박스 */
-.kumo-desc {
-  background: rgba(90,79,207,0.12);
-  border: 1px solid rgba(90,79,207,0.35);
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 13px;
-  color: var(--text1);
-  line-height: 1.6;
-  margin-bottom: 20px;
+/* ── Buy Modal in Scan ───────────────────────── */
+.mbuy-trailing-preview {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px;
+}
+.mbuy-trailing-label { font-size: 11px; color: var(--text3); margin-bottom: 5px; }
+.mbuy-trailing-main  { font-size: 13px; font-weight: 600; color: var(--text1); }
+.mbuy-confirm-btn {
+  width: 100%; padding: 12px;
+  background: linear-gradient(135deg, #818CF8 0%, #6366F1 100%);
+  color: white; border: none; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(129,140,248,0.35);
+  transition: all 0.22s;
+}
+.mbuy-confirm-btn:hover {
+  box-shadow: 0 6px 20px rgba(129,140,248,0.5);
+  transform: translateY(-1px);
 }

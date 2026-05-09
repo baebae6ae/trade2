@@ -1,223 +1,265 @@
-﻿/* static/css/mypage.css */
+﻿/* ═══════════════════════════════════════════════
+   CFIE Design System — mypage.css
+═══════════════════════════════════════════════ */
 
+/* ── Hero ────────────────────────────────────── */
 .mypage-hero {
-  padding: 28px 0 20px;
+  padding: 40px 0 24px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
-.mypage-hero h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
-.mypage-hero p  { font-size: 14px; color: var(--text2); }
+.mypage-hero h1 {
+  font-size: 26px; font-weight: 900;
+  letter-spacing: -1px; margin-bottom: 6px;
+  background: linear-gradient(135deg, var(--text1) 0%, var(--text2) 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.mypage-hero p { font-size: 14px; color: var(--text2); }
 
-/* 요약 카드 */
-.mp-summary {
+/* ── Stats Row ───────────────────────────────── */
+.stats-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
-  margin-bottom: 28px;
-}
-.mp-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 18px 20px;
-}
-.mp-card-label { font-size: 11px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-.mp-card-value { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
-.mp-card-value.bull { color: var(--bull); }
-.mp-card-value.bear { color: var(--bear); }
-.mp-card-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
-
-.mp-analysis {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 18px 20px;
-  margin-bottom: 28px;
-}
-.mp-analysis-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-.mp-analysis-title { font-size: 16px; font-weight: 800; }
-.mp-analysis-sub { font-size: 13px; color: var(--text2); margin-top: 4px; line-height: 1.5; }
-.mp-analysis-badge {
-  padding: 7px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  color: white;
-  white-space: nowrap;
-}
-.mp-analysis-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.mp-analysis-card {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
-}
-.mp-analysis-label { font-size: 11px; color: var(--text3); font-weight: 700; margin-bottom: 6px; text-transform: uppercase; }
-.mp-analysis-value { font-size: 18px; font-weight: 800; }
-.mp-analysis-note { font-size: 12px; color: var(--text3); margin-top: 4px; line-height: 1.45; }
-.mp-analysis-points { display: grid; gap: 8px; }
-.mp-analysis-point {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 10px 12px;
-  font-size: 13px;
-  line-height: 1.5;
+  margin-bottom: 36px;
 }
 
-/* 포지션 테이블 */
-.mp-table-wrap {
+.stat-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  position: relative;
   overflow: hidden;
+  transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
 }
-.mp-table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 20px;
+.stat-card::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+  pointer-events: none;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+  border-color: rgba(148,163,184,0.2);
+}
+
+.stat-label {
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;
+}
+.stat-value {
+  font-size: 22px; font-weight: 900; letter-spacing: -1px;
+  color: var(--text1);
+}
+.stat-value.bull { color: var(--bull); }
+.stat-value.bear { color: var(--bear); }
+.stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+/* ── Holdings Table ──────────────────────────── */
+.holdings-wrap {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 32px;
+}
+
+.holdings-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 22px;
+  background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
   border-bottom: 1px solid var(--border);
 }
-.mp-table-title { font-size: 14px; font-weight: 700; }
-.mp-refresh-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 14px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  font-size: 12px; font-weight: 600;
-  color: var(--text2);
-  transition: all 0.15s;
+.holdings-title {
+  font-size: 14px; font-weight: 700; color: var(--text1);
+  display: flex; align-items: center; gap: 8px;
 }
-.mp-refresh-btn:hover { color: var(--text1); border-color: var(--text3); }
+.holdings-count {
+  font-size: 11px; font-weight: 700;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.2);
+  padding: 2px 9px; border-radius: 20px;
+}
 
-.mp-table { width: 100%; border-collapse: collapse; }
-.mp-table th {
-  padding: 10px 16px;
+.holdings-table-wrap { overflow-x: auto; }
+.holdings-table { width: 100%; border-collapse: collapse; }
+.holdings-table th {
+  padding: 10px 18px;
+  background: var(--bg);
+  color: var(--text3);
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  text-align: right; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.holdings-table th:first-child { text-align: left; }
+.holdings-table td {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border2);
+  font-size: 13px; text-align: right;
+  color: var(--text1); white-space: nowrap;
+  transition: background 0.15s;
+}
+.holdings-table td:first-child { text-align: left; }
+.holdings-table tr:hover td { background: rgba(255,255,255,0.025); }
+
+.ht-name   { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; }
+.ht-ticker { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.ht-bull   { color: var(--bull); font-weight: 700; }
+.ht-bear   { color: var(--bear); font-weight: 700; }
+
+/* ── Trailing Stop Display ───────────────────── */
+.ts-info {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.ts-price {
+  font-size: 12px; font-weight: 700;
+  color: var(--gold);
+}
+.ts-gap {
+  font-size: 10px; color: var(--text3);
+}
+.ts-badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px;
+  background: rgba(251,191,36,0.1);
+  color: var(--gold);
+  border: 1px solid rgba(251,191,36,0.25);
+}
+
+/* ── Action Buttons ──────────────────────────── */
+.ht-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 7px;
+  font-size: 12px; font-weight: 700;
+  transition: all 0.18s; cursor: pointer;
+}
+.ht-btn-analyze {
+  background: rgba(129,140,248,0.1); color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.2);
+}
+.ht-btn-analyze:hover { background: rgba(129,140,248,0.2); }
+.ht-btn-sell {
+  background: rgba(96,165,250,0.08); color: var(--bear);
+  border: 1px solid rgba(96,165,250,0.2);
+}
+.ht-btn-sell:hover { background: rgba(96,165,250,0.18); }
+
+/* ── Empty State ─────────────────────────────── */
+.empty-holdings {
+  padding: 64px 24px;
+  text-align: center;
+}
+.eh-icon { font-size: 40px; margin-bottom: 14px; opacity: 0.45; }
+.eh-title { font-size: 16px; font-weight: 700; color: var(--text1); margin-bottom: 8px; }
+.eh-sub   { font-size: 13px; color: var(--text2); margin-bottom: 22px; line-height: 1.7; }
+.eh-cta {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 11px 24px;
+  background: linear-gradient(135deg, rgba(129,140,248,0.15) 0%, rgba(34,211,238,0.08) 100%);
+  border: 1px solid rgba(129,140,248,0.28);
+  border-radius: var(--radius-sm);
+  color: var(--accent); font-size: 13px; font-weight: 700;
+  text-decoration: none; transition: all 0.2s;
+}
+.eh-cta:hover {
+  background: linear-gradient(135deg, rgba(129,140,248,0.25) 0%, rgba(34,211,238,0.14) 100%);
+  box-shadow: 0 0 16px rgba(129,140,248,0.15);
+}
+
+/* ── History / Log ───────────────────────────── */
+.trade-log-wrap {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.log-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 22px;
+  background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px; font-weight: 700; color: var(--text1);
+}
+.log-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.log-table th {
+  padding: 9px 18px;
   background: var(--bg);
   color: var(--text3);
   font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.5px;
   text-align: right; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
 }
-.mp-table th:first-child { text-align: left; }
-.mp-table td {
-  padding: 14px 16px;
-  border-top: 1px solid var(--border);
-  font-size: 13px; text-align: right;
-  white-space: nowrap;
+.log-table th:first-child { text-align: left; }
+.log-table td {
+  padding: 11px 18px;
+  border-top: 1px solid var(--border2);
+  text-align: right; color: var(--text1); white-space: nowrap;
 }
-.mp-table td:first-child { text-align: left; }
-.mp-table tr:hover td { background: rgba(255,255,255,0.025); }
-.mp-name   { font-size: 14px; font-weight: 700; }
-.mp-ticker { font-size: 11px; color: var(--text3); margin-top: 2px; }
-.mp-signal-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-.mp-signal {
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  border: 1px solid transparent;
-}
-.mp-signal-risk { background: rgba(21,101,192,0.10); color: #64B5F6; border-color: rgba(21,101,192,0.22); }
-.mp-bull   { color: var(--bull); font-weight: 700; }
-.mp-bear   { color: var(--bear); font-weight: 700; }
-.mp-actions { display: flex; gap: 6px; justify-content: flex-end; }
-.mp-btn {
-  padding: 4px 10px; border-radius: 6px;
-  font-size: 12px; font-weight: 600;
-  transition: all 0.15s;
-}
-.mp-btn-analyze { background: rgba(124,111,247,0.1); color: var(--accent); border: 1px solid rgba(124,111,247,0.25); }
-.mp-btn-analyze:hover { background: rgba(124,111,247,0.2); }
-.mp-btn-buy { background: rgba(229,57,53,0.08); color: var(--bull); border: 1px solid rgba(229,57,53,0.2); }
-.mp-btn-buy:hover { background: rgba(229,57,53,0.18); }
-.mp-btn-sell { background: rgba(21,101,192,0.08); color: #64B5F6; border: 1px solid rgba(21,101,192,0.2); }
-.mp-btn-sell:hover { background: rgba(21,101,192,0.18); }
+.log-table td:first-child { text-align: left; color: var(--text2); }
+.log-table tr:hover td { background: rgba(255,255,255,0.025); }
 
-/* 빈 상태 */
-.mp-empty {
-  padding: 60px 24px; text-align: center;
+/* ── Chart Modal in Mypage ───────────────────── */
+.chart-modal-box {
+  background: var(--bg2);
+  border: 1px solid rgba(148,163,184,0.12);
+  border-radius: var(--radius-xl);
+  width: 90%; max-width: 920px; max-height: 90vh;
+  overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(129,140,248,0.06);
+  animation: slideUp 0.25s cubic-bezier(0.4,0,0.2,1);
 }
-.mp-empty-icon  { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
-.mp-empty-title { font-size: 15px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
-.mp-empty-sub   { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
-
-
-
-/* ── 포지션 리스크 표시 ──────────────────────────────────── */
-.mp-setup-chip {
-  display: inline-block; background: #1a3a2a; color: #56d364;
-  border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 600;
+.chart-modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 22px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
 }
-.mp-risk-row {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11px; margin-top: 4px; padding: 3px 6px;
-  border-radius: 4px; background: var(--bg3); border: 1px solid transparent;
+.chart-modal-title { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
+.cmo-full-btn {
+  padding: 6px 14px; border-radius: 7px;
+  font-size: 12px; font-weight: 700;
+  background: var(--accent-bg); color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.25); transition: all 0.18s;
 }
-.mp-stop-near   { background: #c6282812; border-color: #c6282844; }
-.mp-stop-broken { background: #c6282822; border-color: #c62828; }
-.mp-ema-below   { background: #f9a82510; border-color: #f9a82544; }
-.mp-risk-label  { color: var(--text3); min-width: 72px; font-size: 10px; }
-.mp-risk-value  { font-weight: 700; color: var(--text1); }
-.mp-risk-pct    { color: var(--text2); margin-left: 2px; }
-.mp-warn-badge  {
-  margin-left: auto; background: #e65100; color: #fff;
-  border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 700;
+.cmo-full-btn:hover { background: rgba(129,140,248,0.2); }
+.cmo-close-btn {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 7px; font-size: 16px;
+  color: var(--text3); background: var(--bg3);
+  border: 1px solid var(--border); transition: all 0.15s;
 }
-.mp-danger  { background: #c62828; }
-.mp-caution { background: #e65100; }
-.mp-flag    { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
-.mp-flag-hot { background: #7b1fa222; color: #ce93d8; border: 1px solid #7b1fa255; }
+.cmo-close-btn:hover { color: var(--text1); background: var(--bg4); }
 
-
-/* ── 포지션 리스크 표시 ──────────────────────────────────── */
-.mp-setup-chip {
-  display: inline-block; background: #1a3a2a; color: #56d364;
-  border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 600;
+/* ── Sell Modal Buttons ──────────────────────── */
+.btn-full-sell {
+  padding: 10px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+  color: #fff; border: none;
+  box-shadow: 0 4px 14px rgba(59,130,246,0.3); transition: all 0.2s;
 }
-.mp-risk-row {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11px; margin-top: 4px; padding: 3px 6px;
-  border-radius: 4px; background: var(--bg3); border: 1px solid transparent;
+.btn-full-sell:hover { box-shadow: 0 6px 20px rgba(59,130,246,0.45); transform: translateY(-1px); }
+.btn-part-sell {
+  padding: 10px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  background: rgba(96,165,250,0.08); color: var(--bear);
+  border: 1px solid rgba(96,165,250,0.28); transition: all 0.2s;
 }
-.mp-stop-near   { background: #c6282812; border-color: #c6282844; }
-.mp-stop-broken { background: #c6282822; border-color: #c62828; }
-.mp-ema-below   { background: #f9a82510; border-color: #f9a82544; }
-.mp-risk-label  { color: var(--text3); min-width: 72px; font-size: 10px; }
-.mp-risk-value  { font-weight: 700; color: var(--text1); }
-.mp-risk-pct    { color: var(--text2); margin-left: 2px; }
-.mp-warn-badge  {
-  margin-left: auto; background: #e65100; color: #fff;
-  border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 700;
+.btn-part-sell:hover { background: rgba(96,165,250,0.16); }
+
+/* ── Modal Scenario ──────────────────────────── */
+.modal-scenario-chip {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px;
+  background: var(--accent-bg); color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.2);
 }
-.mp-danger  { background: #c62828; }
-.mp-caution { background: #e65100; }
-.mp-flag    { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
-.mp-flag-hot { background: #7b1fa222; color: #ce93d8; border: 1px solid #7b1fa255; }
-
-.mp-target1-row { border-color: #43a04744; }
-.mp-target2-row { border-color: #1565c044; }
-.mp-target-hit  { background: #1b5e2010; border-color: #43a047 !important; }
-.mp-target-badge { background: #2e7d32; color: #fff; }
-.mp-flag-target1 { background: #2e7d3222; color: #81c784; border: 1px solid #2e7d3255; }
-.mp-flag-target2 { background: #1565c022; color: #90caf9; border: 1px solid #1565c055; }
-
-.mp-target1-row { border-color: #43a04744; }
-.mp-target2-row { border-color: #1565c044; }
-.mp-target-hit  { background: #1b5e2010; border-color: #43a047 !important; }
-.mp-target-badge { background: #2e7d32; color: #fff; }
-.mp-flag-target1 { background: #2e7d3222; color: #81c784; border: 1px solid #2e7d3255; }
-.mp-flag-target2 { background: #1565c022; color: #90caf9; border: 1px solid #1565c055; }
