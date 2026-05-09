@@ -262,3 +262,30 @@
 
 /* ── Index card (legacy, kept) ───────────────── */
 .index-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+
+/* ── Heatmap Treemap ─────────────────────────── */
+.hm-tabs {
+  display: flex; gap: 4px; margin-bottom: 8px;
+}
+.hm-tab {
+  padding: 4px 12px; border-radius: 5px;
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  background: var(--bg3); border: 1px solid var(--border);
+  cursor: pointer; transition: all 0.15s;
+}
+.hm-tab:hover { color: var(--text1); }
+.hm-tab.active {
+  color: var(--accent); background: var(--accent-bg);
+  border-color: rgba(129,140,248,0.3);
+}
+
+.hm-canvas {
+  width: 100%;
+  min-height: 220px;
+  overflow: hidden;
+}
+.hm-canvas svg { border-radius: 6px; }
+
+/* 마켓맵 컨테이너 높이 확대 */
+.ms-map-body { min-height: 240px; }
+.ms-body { grid-template-columns: 300px 1fr; }

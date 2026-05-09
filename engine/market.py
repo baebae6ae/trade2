@@ -1,11 +1,13 @@
 ﻿"""
 engine/market.py
-한국/미국 시장 지수 요약 데이터 수집 + 마켓맵 + 52주 신고가
+한국/미국 시장 지수 + 마켓맵 (배치) + 52주 신고가 (배치)
 """
 
 import concurrent.futures
 import numpy as np
-from engine.data import fetch_market_index, fetch, resample_ohlcv
+import pandas as pd
+import yfinance as yf
+from engine.data import fetch_market_index, resample_ohlcv
 
 INDICES = {
     "KR": [
@@ -23,9 +25,43 @@ INDICES = {
     ],
 }
 
+# ── 섹터 구조 정의 ─────────────────────────────────────────
+# KR 섹터: (섹터명, [(ticker, name), ...])
+KR_SECTORS = [
+    ("반도체", [("005930.KS","삼성전자"),("000660.KS","SK하이닉스"),("009150.KS","삼성전기"),("034220.KS","LG디스플레이")]),
+    ("자동차", [("005380.KS","현대차"),("000270.KS","기아"),("012330.KS","현대모비스"),("247540.KQ","에코프로비엠")]),
+    ("화학·배터리", [("051910.KS","LG화학"),("006400.KS","삼성SDI"),("096770.KS","SK이노베이션"),("066970.KQ","엘앤에프")]),
+    ("금융", [("055550.KS","신한지주"),("086790.KS","하나금융지주"),("024110.KS","기업은행"),("316140.KS","우리금융지주"),("032830.KS","삼성생명"),("000810.KS","삼성화재")]),
+    ("IT·플랫폼", [("035420.KS","NAVER"),("035720.KS","카카오"),("018260.KS","삼성SDS"),("017670.KS","SK텔레콤")]),
+    ("에너지", [("010950.KS","S-Oil"),("015760.KS","한국전력")]),
+    ("소재·산업재", [("005490.KS","POSCO홀딩스"),("028260.KS","삼성물산"),("003550.KS","LG"),("011200.KS","HMM"),("003490.KS","대한항공")]),
+    ("바이오·헬스", [("207940.KS","삼성바이오로직스"),("033780.KS","KT&G"),("145020.KQ","휴젤"),("196170.KQ","알테오젠"),("285130.KQ","SK바이오사이언스")]),
+    ("게임·엔터", [("263750.KQ","펄어비스"),("041510.KQ","에스엠"),("293480.KQ","카카오게임즈"),("035900.KQ","JYP Ent."),("112040.KQ","위메이드"),("251270.KQ","넷마블")]),
+    ("소부장", [("357780.KQ","솔브레인"),("394280.KQ","오픈엣지테크놀로지"),("140860.KQ","파크시스템스"),("095340.KQ","ISC"),("211270.KQ","AP시스템"),("039030.KQ","이오테크닉스")]),
+]
+
+US_SECTORS = [
+    ("Tech", [("AAPL","Apple"),("MSFT","Microsoft"),("NVDA","NVIDIA"),("AVGO","Broadcom"),("ORCL","Oracle"),("AMD","AMD"),("INTC","Intel"),("CRM","Salesforce")]),
+    ("Communication", [("GOOGL","Alphabet"),("META","Meta"),("NFLX","Netflix"),("DIS","Disney")]),
+    ("Consumer", [("AMZN","Amazon"),("TSLA","Tesla"),("HD","Home Depot"),("COST","Costco"),("WMT","Walmart"),("KO","Coca-Cola"),("PEP","PepsiCo")]),
+    ("Finance", [("JPM","JPMorgan"),("V","Visa"),("MA","Mastercard"),("BAC","Bank of America")]),
+    ("Healthcare", [("UNH","UnitedHealth"),("LLY","Eli Lilly"),("JNJ","J&J"),("ABBV","AbbVie"),("MRK","Merck")]),
+    ("Energy", [("XOM","Exxon")]),
+]
+
+# 섹터 → ticker 역매핑
+def _build_ticker_to_sector(sectors):
+    mapping = {}
+    for sector, stocks in sectors:
+        for ticker, name in stocks:
+            mapping[ticker] = sector
+    return mapping
+
+KR_TICKER_SECTOR = _build_ticker_to_sector(KR_SECTORS)
+US_TICKER_SECTOR = _build_ticker_to_sector(US_SECTORS)
+
 
 def get_market_summary() -> dict:
-    """전 시장 지수 현황 딕셔너리 반환"""
     result = {"KR": [], "US": []}
     for region, items in INDICES.items():
         for item in items:
@@ -34,106 +70,195 @@ def get_market_summary() -> dict:
     return result
 
 
-# ── 마켓맵 ────────────────────────────────────────────────
+# ── 배치 다운로드 ─────────────────────────────────────────
 
-def _fetch_change_one(ticker_name):
-    ticker, name = ticker_name
+def _batch_change(tickers: list) -> dict:
+    """
+    yfinance 배치 다운로드로 일간 등락률 한번에 계산.
+    반환: {ticker: change_pct}
+    """
+    if not tickers:
+        return {}
     try:
-        import yfinance as yf
-        raw = yf.download(ticker, period="5d", auto_adjust=True, progress=False)
-        if raw.empty:
-            return None
-        raw.columns = [c[0] if isinstance(c, tuple) else c for c in raw.columns]
-        close = raw["Close"].dropna()
-        if len(close) < 2:
-            return None
-        price = float(close.iloc[-1])
-        prev  = float(close.iloc[-2])
-        pct   = (price - prev) / prev * 100 if prev else 0.0
-        # short display name
-        short = name.replace("홀딩스","").replace("전자","").replace(" Inc.","").replace(" Corp.","")
-        short = short[:7]
-        return {
+        raw = yf.download(
+            tickers, period="5d",
+            auto_adjust=True, progress=False,
+            group_by="ticker", threads=True,
+        )
+        result = {}
+        if len(tickers) == 1:
+            ticker = tickers[0]
+            close = raw["Close"].dropna() if "Close" in raw.columns else pd.Series()
+            if len(close) >= 2:
+                result[ticker] = round((float(close.iloc[-1]) - float(close.iloc[-2])) / float(close.iloc[-2]) * 100, 2)
+            return result
+
+        for ticker in tickers:
+            try:
+                if ticker not in raw.columns.get_level_values(0):
+                    continue
+                close = raw[ticker]["Close"].dropna()
+                if len(close) < 2:
+                    continue
+                result[ticker] = round((float(close.iloc[-1]) - float(close.iloc[-2])) / float(close.iloc[-2]) * 100, 2)
+            except Exception:
+                continue
+        return result
+    except Exception:
+        return {}
+
+
+def _batch_prices(tickers: list) -> dict:
+    """배치로 최신 종가 반환: {ticker: price}"""
+    if not tickers:
+        return {}
+    try:
+        raw = yf.download(
+            tickers, period="5d",
+            auto_adjust=True, progress=False,
+            group_by="ticker", threads=True,
+        )
+        result = {}
+        if len(tickers) == 1:
+            ticker = tickers[0]
+            close = raw["Close"].dropna() if "Close" in raw.columns else pd.Series()
+            if len(close):
+                result[ticker] = float(close.iloc[-1])
+            return result
+        for ticker in tickers:
+            try:
+                close = raw[ticker]["Close"].dropna()
+                if len(close):
+                    result[ticker] = float(close.iloc[-1])
+            except Exception:
+                continue
+        return result
+    except Exception:
+        return {}
+
+
+# ── 마켓맵 데이터 ─────────────────────────────────────────
+
+def get_market_map_data(region: str) -> dict:
+    """
+    트리맵용 데이터 반환.
+    {
+      "stocks": [{ticker, name, short, change_pct, sector}, ...],
+      "sectors": [{name, change_pct, stocks:[...]}, ...]
+    }
+    """
+    if region.upper() == "KR":
+        sectors_def    = KR_SECTORS
+        ticker_sector  = KR_TICKER_SECTOR
+    else:
+        sectors_def    = US_SECTORS
+        ticker_sector  = US_TICKER_SECTOR
+
+    all_stocks = [(t, n) for _, pairs in sectors_def for t, n in pairs]
+    all_tickers = [t for t, _ in all_stocks]
+    name_map    = {t: n for t, n in all_stocks}
+
+    changes = _batch_change(all_tickers)
+
+    stocks_out = []
+    for ticker, name in all_stocks:
+        pct   = changes.get(ticker, 0.0)
+        short = (name.replace("홀딩스","").replace("전자","")
+                     .replace(" Inc.","").replace(" Corp.",""))[:8]
+        stocks_out.append({
             "ticker":     ticker,
             "name":       name,
             "short":      short,
-            "price":      round(price, 2),
-            "change_pct": round(pct, 2),
-        }
-    except Exception:
-        return None
+            "change_pct": pct,
+            "sector":     ticker_sector.get(ticker, "기타"),
+        })
+
+    # 섹터별 집계 (단순 평균)
+    sectors_out = []
+    for sector_name, pairs in sectors_def:
+        s_tickers = [t for t, _ in pairs]
+        pcts = [changes[t] for t in s_tickers if t in changes]
+        avg  = round(sum(pcts) / len(pcts), 2) if pcts else 0.0
+        sectors_out.append({
+            "name":       sector_name,
+            "change_pct": avg,
+            "count":      len(pairs),
+        })
+
+    return {"stocks": stocks_out, "sectors": sectors_out}
 
 
-def get_market_map_data(region: str) -> list:
-    """히트맵용 일간 등락률 데이터"""
-    from engine.scanner import KOSPI, KOSDAQ, US
-    stocks_map = {"KR": KOSPI + KOSDAQ, "US": US}
-    stocks = stocks_map.get(region.upper(), [])
-    if not stocks:
-        return []
-    results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:
-        for r in ex.map(_fetch_change_one, stocks):
-            if r:
-                results.append(r)
-    results.sort(key=lambda x: x["change_pct"], reverse=True)
-    return results
-
-
-# ── 52주 신고가 ───────────────────────────────────────────
-
-def _check_52w(ticker_name):
-    ticker, name = ticker_name
-    try:
-        df   = fetch(ticker, "2y")
-        df_w = resample_ohlcv(df, "weekly")
-        if len(df_w) < 20:
-            return None
-        close  = df_w["Close"]
-        high52 = close.rolling(52, min_periods=20).max()
-        # 현재 종가가 52주 고점의 98.5% 이상이면 신고가로 판단
-        at_high = close >= high52 * 0.985
-        if not at_high.iloc[-1]:
-            return None
-        # 연속 주수 계산
-        streak = 0
-        for val in reversed(at_high.values.tolist()):
-            if val:
-                streak += 1
-            else:
-                break
-        current = float(close.iloc[-1])
-        h52     = float(high52.iloc[-1])
-        gap_pct = (current - h52) / h52 * 100 if h52 else 0.0
-        # 일봉 당일 등락
-        df_d     = fetch(ticker, "5d")
-        dc = df_d["Close"].dropna()
-        day_pct  = 0.0
-        if len(dc) >= 2:
-            day_pct = (float(dc.iloc[-1]) - float(dc.iloc[-2])) / float(dc.iloc[-2]) * 100
-        return {
-            "ticker":   ticker,
-            "name":     name,
-            "close":    current,
-            "high52":   round(h52, 2),
-            "gap_pct":  round(gap_pct, 2),
-            "streak":   streak,
-            "day_pct":  round(day_pct, 2),
-        }
-    except Exception:
-        return None
-
+# ── 52주 신고가 (배치) ────────────────────────────────────
 
 def get_52week_highs(market_key: str) -> list:
-    """지정 시장의 52주 신고가 종목 반환"""
     from engine.scanner import MARKET_MAP
+
     stocks = MARKET_MAP.get(market_key.lower(), [])
     if not stocks:
         return []
+
+    all_tickers = [t for t, _ in stocks]
+    name_map    = {t: n for t, n in stocks}
+
+    # 2년치 주봉 데이터 배치 다운로드
+    try:
+        raw_daily = yf.download(
+            all_tickers, period="2y",
+            auto_adjust=True, progress=False,
+            group_by="ticker", threads=True,
+        )
+    except Exception:
+        return []
+
     results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
-        for r in ex.map(_check_52w, stocks):
-            if r:
-                results.append(r)
+    for ticker in all_tickers:
+        name = name_map[ticker]
+        try:
+            if len(all_tickers) == 1:
+                close_d = raw_daily["Close"].dropna()
+            else:
+                if ticker not in raw_daily.columns.get_level_values(0):
+                    continue
+                close_d = raw_daily[ticker]["Close"].dropna()
+            if len(close_d) < 20:
+                continue
+
+            close_w = close_d.resample("W-FRI").last().dropna()
+            if len(close_w) < 10:
+                continue
+
+            high52  = close_w.rolling(52, min_periods=10).max()
+            at_high = close_w >= high52 * 0.985
+            if not at_high.iloc[-1]:
+                continue
+
+            streak = 0
+            for val in reversed(at_high.values.tolist()):
+                if val:
+                    streak += 1
+                else:
+                    break
+
+            current = float(close_w.iloc[-1])
+            h52     = float(high52.iloc[-1])
+            gap_pct = round((current - h52) / h52 * 100, 2) if h52 else 0.0
+
+            # 당일 등락 (일봉 마지막 2개)
+            day_pct = 0.0
+            if len(close_d) >= 2:
+                day_pct = round((float(close_d.iloc[-1]) - float(close_d.iloc[-2])) / float(close_d.iloc[-2]) * 100, 2)
+
+            results.append({
+                "ticker":  ticker,
+                "name":    name,
+                "close":   round(current, 2),
+                "high52":  round(h52, 2),
+                "gap_pct": gap_pct,
+                "streak":  streak,
+                "day_pct": day_pct,
+            })
+        except Exception:
+            continue
+
     results.sort(key=lambda x: x["streak"], reverse=True)
     return results

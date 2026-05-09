@@ -39,9 +39,8 @@ function renderQuotes(containerId, items, updatedId) {
     const pct    = item.change_pct;
     const dirCls = pct > 0 ? "bull" : pct < 0 ? "bear" : "flat";
     const sign   = pct > 0 ? "+" : "";
-    const abssign= item.change > 0 ? "+" : "";
+    const abssign= (item.change||0) > 0 ? "+" : "";
     const arrow  = pct > 0 ? "▲" : pct < 0 ? "▼" : "—";
-    // bar width (max 4% = 100%)
     const barW   = pct != null ? Math.min(Math.abs(pct) / 4 * 100, 100) : 0;
     return `
       <div class="mq-row" onclick="goAnalyze('${item.ticker}')">
@@ -64,53 +63,67 @@ function renderQuotes(containerId, items, updatedId) {
 }
 
 // ── 마켓맵 ────────────────────────────────────────────
+const _mapCache = {};   // region -> data
+const _mapMode  = { KR: "sector", US: "sector" };
+
 async function loadMarketMap(region) {
   const bodyId = region === "KR" ? "krMapBody" : "usMapBody";
   const body   = document.getElementById(bodyId);
   if (!body) return;
-  body.innerHTML = '<div class="map-loading">로딩 중…</div>';
+
+  if (_mapCache[region]) {
+    _drawMap(region, body, _mapCache[region]);
+    return;
+  }
+  body.innerHTML = '<div class="map-loading">히트맵 로딩 중…</div>';
   try {
     const data = await fetch(`/api/marketmap/${region}`).then(r => r.json());
-    if (!data.ok || !data.data.length) {
+    if (!data.ok || !data.data) {
       body.innerHTML = '<div class="map-loading">데이터 없음</div>';
       return;
     }
-    renderHeatmap(body, data.data);
+    _mapCache[region] = data.data;
+    _drawMap(region, body, data.data);
   } catch(e) {
     body.innerHTML = '<div class="map-loading">오류 발생</div>';
   }
 }
 
-function renderHeatmap(container, stocks) {
-  // color scale: -3% ~ +3%
-  function pctToColor(pct) {
-    if (pct >= 3)   return { bg: "#1A3A2A", text: "#4ADE80", border: "#166534" };
-    if (pct >= 1.5) return { bg: "#162E22", text: "#22D3EE", border: "#155E75" };
-    if (pct >= 0.3) return { bg: "#112832", text: "#67E8F9", border: "#155E75" };
-    if (pct >= -0.3)return { bg: "#1A1F2E", text: "#94A3B8", border: "#334155" };
-    if (pct >= -1.5)return { bg: "#2A1622", text: "#F9A8D4", border: "#9F1239" };
-    if (pct >= -3)  return { bg: "#301218", text: "#FB7185", border: "#881337" };
-    return              { bg: "#3B0A12", text: "#F43F5E", border: "#9F1239" };
+function _drawMap(region, body, data) {
+  const mode = _mapMode[region] || "sector";
+  body.innerHTML = "";
+
+  // 탭 헤더
+  const tabBar = document.createElement("div");
+  tabBar.className = "hm-tabs";
+  tabBar.innerHTML = `
+    <button class="hm-tab ${mode==="sector"?"active":""}" onclick="_switchMapMode('${region}','sector',this)">섹터</button>
+    <button class="hm-tab ${mode==="stock"?"active":""}"  onclick="_switchMapMode('${region}','stock',this)">종목</button>`;
+  body.appendChild(tabBar);
+
+  const canvas = document.createElement("div");
+  canvas.className = "hm-canvas";
+  body.appendChild(canvas);
+  renderTreemap(canvas, data, mode);
+}
+
+function _switchMapMode(region, mode, btn) {
+  _mapMode[region] = mode;
+  btn.closest(".ms-map-body").querySelectorAll(".hm-tab").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  if (_mapCache[region]) {
+    const bodyId = region === "KR" ? "krMapBody" : "usMapBody";
+    const body   = document.getElementById(bodyId);
+    const canvas = body.querySelector(".hm-canvas");
+    if (canvas) {
+      canvas.innerHTML = "";
+      renderTreemap(canvas, _mapCache[region], mode);
+    }
   }
-
-  const cells = stocks.map(s => {
-    const c = pctToColor(s.change_pct);
-    const sign = s.change_pct >= 0 ? "+" : "";
-    return `<div class="hm-cell" style="background:${c.bg};border-color:${c.border}"
-                 onclick="goAnalyze('${s.ticker}')" title="${s.name}: ${sign}${s.change_pct}%">
-      <div class="hm-short" style="color:${c.text}">${s.short}</div>
-      <div class="hm-pct"   style="color:${c.text}">${sign}${s.change_pct.toFixed(1)}%</div>
-    </div>`;
-  }).join("");
-
-  container.innerHTML = `<div class="hm-grid">${cells}</div>`;
 }
 
 // ── 52주 신고가 ───────────────────────────────────────
-let _current52Market = "kospi";
-
 async function load52h(market, btn) {
-  _current52Market = market;
   document.querySelectorAll(".h52-tab").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
 
@@ -135,7 +148,6 @@ function render52hGrid(grid, stocks) {
     const daySign = s.day_pct  >= 0 ? "+" : "";
     const gapCls  = s.gap_pct  >= 0 ? "bull" : "bear";
     const gapSign = s.gap_pct  >= 0 ? "+" : "";
-    // streak badge color
     const strColor = s.streak >= 8 ? "#F59E0B" : s.streak >= 4 ? "#818CF8" : "#22D3EE";
     return `
       <div class="h52-card" onclick="goAnalyze('${s.ticker}')">
@@ -238,10 +250,12 @@ function renderPortfolio(wrap, positions, summary) {
 
 // ── 초기화 ─────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
+  // 우선순위 1: 지수 + 포트폴리오 (빠름)
   loadMarket();
   loadPortfolio();
-  // 마켓맵은 지수 로드 후 순차적으로
-  setTimeout(() => { loadMarketMap("KR"); loadMarketMap("US"); }, 1200);
-  // 52주 신고가: 초기 탭 (KOSPI)
-  load52h("kospi", document.querySelector(".h52-tab"));
+  // 우선순위 2: 마켓맵 (배치 다운로드, 10~20초 소요 예상)
+  setTimeout(() => loadMarketMap("KR"), 800);
+  setTimeout(() => loadMarketMap("US"), 900);
+  // 우선순위 3: 52주 신고가 (배치, 느림)
+  setTimeout(() => load52h("kospi", document.querySelector(".h52-tab")), 1000);
 });
