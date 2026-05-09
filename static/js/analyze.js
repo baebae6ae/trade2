@@ -9,6 +9,7 @@ const COL_LABELS = {
 
 let _chartMeta = null;
 let _chartOverlayBound = false;
+let _chartPinned = null;
 
 function _chartEls() {
   return {
@@ -67,6 +68,43 @@ function _hideChartCrosshair() {
   [crossX, crossY, xLabel, yLabel].forEach(el => el?.classList.add("hidden"));
 }
 
+function _clearPinnedEvent() {
+  _chartPinned = null;
+  document.querySelectorAll(".chart-event-badge.active").forEach(el => el.classList.remove("active"));
+}
+
+function _drawChartCrosshair(panelKey, idx, value, date) {
+  if (!_chartMeta) return;
+  const { crossX, crossY, xLabel, yLabel } = _chartEls();
+  const plot = _chartMeta.plot_area;
+  const panel = _chartMeta.panels?.[panelKey];
+  const pricePanel = _chartMeta.panels?.price;
+  if (!panel || !pricePanel) return;
+
+  const x = pricePanel.left + (((idx - pricePanel.x_min) / Math.max(0.0001, pricePanel.x_max - pricePanel.x_min)) * pricePanel.width);
+  const y = panel.top + ((1 - ((value - panel.y_min) / Math.max(0.0001, panel.y_max - panel.y_min))) * panel.height);
+
+  crossX.style.left = _pct(x);
+  crossX.style.top = _pct(plot.top);
+  crossX.style.height = _pct(plot.bottom - plot.top);
+  crossX.classList.remove("hidden");
+
+  crossY.style.left = _pct(panel.left);
+  crossY.style.top = _pct(y);
+  crossY.style.width = _pct(panel.right - panel.left);
+  crossY.classList.remove("hidden");
+
+  xLabel.textContent = date || "";
+  xLabel.style.left = _pct(x);
+  xLabel.style.top = _pct(plot.bottom);
+  xLabel.classList.remove("hidden");
+
+  yLabel.textContent = _chartValueText(panelKey, value);
+  yLabel.style.left = _pct(panel.right);
+  yLabel.style.top = _pct(y);
+  yLabel.classList.remove("hidden");
+}
+
 function _bindChartOverlay() {
   if (_chartOverlayBound) return;
   const { overlay } = _chartEls();
@@ -74,6 +112,7 @@ function _bindChartOverlay() {
 
   overlay.addEventListener("mousemove", e => {
     if (!_chartMeta) return;
+    if (_chartPinned) return;
     const { crossX, crossY, xLabel, yLabel } = _chartEls();
     const rect = overlay.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
@@ -96,11 +135,8 @@ function _bindChartOverlay() {
       return;
     }
 
-    const idx = _clamp(
-      Math.round(((x - plot.left) / Math.max(0.0001, plot.right - plot.left)) * ((_chartMeta.count || 1) - 1)),
-      0,
-      Math.max(0, (_chartMeta.count || 1) - 1)
-    );
+    const dataX = active.x_min + (((x - active.left) / Math.max(0.0001, active.width)) * (active.x_max - active.x_min));
+    const idx = _clamp(Math.round(dataX), 0, Math.max(0, (_chartMeta.count || 1) - 1));
     const date = _chartMeta.dates?.[idx] || "";
     const relY = 1 - ((y - active.top) / Math.max(0.0001, active.height));
     const value = active.y_min + relY * (active.y_max - active.y_min);
@@ -127,6 +163,21 @@ function _bindChartOverlay() {
   });
 
   overlay.addEventListener("mouseleave", () => {
+    if (_chartPinned) return;
+    _hideChartCrosshair();
+    _hideChartTooltip();
+  });
+
+  overlay.addEventListener("click", e => {
+    if (e.target.closest(".chart-event-badge")) return;
+    _clearPinnedEvent();
+    _hideChartCrosshair();
+    _hideChartTooltip();
+  });
+
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    _clearPinnedEvent();
     _hideChartCrosshair();
     _hideChartTooltip();
   });
@@ -136,6 +187,7 @@ function _bindChartOverlay() {
 
 function _renderChartOverlay(meta) {
   _chartMeta = meta || null;
+  _clearPinnedEvent();
   const { eventLayer } = _chartEls();
   if (!eventLayer) return;
   eventLayer.innerHTML = "";
@@ -162,6 +214,20 @@ function _renderChartOverlay(meta) {
     btn.addEventListener("mouseenter", e => _showChartTooltip(tooltipHtml, e.clientX, e.clientY));
     btn.addEventListener("mousemove", e => _showChartTooltip(tooltipHtml, e.clientX, e.clientY));
     btn.addEventListener("mouseleave", () => _hideChartTooltip());
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isSame = _chartPinned && _chartPinned.type === ev.type && _chartPinned.idx === ev.idx;
+      if (isSame) {
+        _clearPinnedEvent();
+        _hideChartCrosshair();
+        return;
+      }
+      _clearPinnedEvent();
+      btn.classList.add("active");
+      _chartPinned = { type: ev.type, idx: ev.idx };
+      _drawChartCrosshair(ev.panel, ev.idx, ev.value, ev.date);
+    });
     eventLayer.appendChild(btn);
   });
 }

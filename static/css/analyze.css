@@ -142,6 +142,9 @@
   cursor: default;
   box-shadow: 0 1px 0 rgba(0,0,0,0.04);
 }
+.chart-event-badge.active {
+  box-shadow: 0 0 0 2px rgba(17,17,17,0.25), 0 2px 8px rgba(0,0,0,0.14);
+}
 .chart-crosshair {
   position: absolute;
   pointer-events: none;

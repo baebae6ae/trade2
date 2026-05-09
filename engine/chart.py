@@ -66,7 +66,7 @@ EVENT_EXPLANATIONS = {
 
 def _fig_to_b64(fig) -> str:
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=130, bbox_inches="tight", facecolor=BG)
+    fig.savefig(buf, format="png", dpi=130, facecolor=BG)
     buf.seek(0)
     return base64.b64encode(buf.read()).decode("utf-8")
 
@@ -82,34 +82,25 @@ def _recent_true_indices(mask: pd.Series, limit: int = 3, lookback: int = 90) ->
 
 def _annotate_price_events(ax, df: pd.DataFrame, indices: list[int], label: str,
                            color: str, above: bool = True) -> None:
-    for offset, idx in enumerate(indices):
+    for idx in indices:
         row = df.iloc[idx]
         if above:
             marker_y = float(row["High"])
-            text_y = marker_y * (1.012 + offset * 0.006)
             marker = "^"
-            va = "bottom"
         else:
             marker_y = float(row["Low"])
-            text_y = marker_y * (0.988 - offset * 0.006)
             marker = "v"
-            va = "top"
         ax.scatter(idx, marker_y, s=42, marker=marker, color=color,
                    edgecolors=BG, linewidths=0.6, zorder=6)
-        ax.text(idx, text_y, label, color=color, fontsize=6.8,
-                ha="center", va=va, zorder=7,
-                bbox=dict(facecolor=BG, edgecolor="none", alpha=0.72, pad=1.4))
 
 
 def _annotate_macd_events(ax, df: pd.DataFrame, cross_up: pd.Series, cross_down: pd.Series) -> None:
     for idx in _recent_true_indices(cross_up, limit=2, lookback=120):
         y = max(float(df["MACD"].iloc[idx]), float(df["MACD_SIG"].iloc[idx]))
         ax.scatter(idx, y, s=34, marker="^", color=BULL, zorder=6)
-        ax.text(idx, y, "골든", color=BULL, fontsize=6.5, ha="center", va="bottom")
     for idx in _recent_true_indices(cross_down, limit=2, lookback=120):
         y = min(float(df["MACD"].iloc[idx]), float(df["MACD_SIG"].iloc[idx]))
         ax.scatter(idx, y, s=34, marker="v", color=BEAR, zorder=6)
-        ax.text(idx, y, "데드", color=BEAR, fontsize=6.5, ha="center", va="top")
 
 
 def _build_chart_events(df: pd.DataFrame) -> tuple[pd.Series | None, list[dict], pd.Series, pd.Series, pd.Series, pd.Series, pd.Series]:
@@ -362,7 +353,6 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
     for idx in _recent_true_indices(volume_spike_mask, limit=2, lookback=90):
         y = float(df["Volume"].iloc[idx])
         ax_v.scatter(idx, y, s=34, marker="^", color="#8D6E63", zorder=6)
-        ax_v.text(idx, y, "거래량", color="#8D6E63", fontsize=6.5, ha="center", va="bottom")
     ax_v.set_ylabel("거래량", color=TEXT, fontsize=8)
     ax_v.yaxis.set_ticklabels([])
 
