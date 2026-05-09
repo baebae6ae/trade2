@@ -1,0 +1,15 @@
+﻿name: Keep Render Awake
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping Render URL
+        run: |
+          curl --silent --show-error --fail --max-time 20 --retry 2 --retry-delay 5 "https://trade2-5907.onrender.com/" > /dev/null
