@@ -1,14 +1,76 @@
-﻿"""engine/portfolio.py — 포트폴리오 관리 (portfolio.json 파일 기반)"""
+﻿"""engine/portfolio.py — 포트폴리오 관리 (portfolio.json 파일 기반 + GitHub 동기화)"""
 
+import base64
 import json
 import os
+import threading
 from datetime import datetime
+
+try:
+    import requests as _req
+    _HAS_REQUESTS = True
+except ImportError:
+    _HAS_REQUESTS = False
 
 _BASE          = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORTFOLIO_FILE = os.path.join(_BASE, "portfolio.json")
 
+_GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+_GITHUB_REPO  = os.getenv("GITHUB_REPO",  "")   # ex) "baebae6ae/trade2"
+_GITHUB_PATH  = "portfolio.json"
+_GITHUB_BRANCH = "main"
+
+
+def _gh_url() -> str:
+    return f"https://api.github.com/repos/{_GITHUB_REPO}/contents/{_GITHUB_PATH}"
+
+
+def _gh_headers() -> dict:
+    return {"Authorization": f"token {_GITHUB_TOKEN}",
+            "Accept": "application/vnd.github.v3+json"}
+
+
+def _pull_from_github() -> bool:
+    """GitHub에서 portfolio.json 내려받아 로컬에 저장. 성공 시 True."""
+    if not (_HAS_REQUESTS and _GITHUB_TOKEN and _GITHUB_REPO):
+        return False
+    try:
+        r = _req.get(_gh_url(), headers=_gh_headers(), timeout=10)
+        if r.status_code == 200:
+            raw = base64.b64decode(r.json()["content"]).decode("utf-8")
+            with open(PORTFOLIO_FILE, "w", encoding="utf-8") as f:
+                f.write(raw)
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _push_to_github(content: str):
+    """portfolio.json 내용을 GitHub에 커밋 (백그라운드 스레드에서 호출)."""
+    if not (_HAS_REQUESTS and _GITHUB_TOKEN and _GITHUB_REPO):
+        return
+    try:
+        url = _gh_url()
+        hdrs = _gh_headers()
+        r = _req.get(url, headers=hdrs, timeout=10)
+        sha = r.json().get("sha") if r.status_code == 200 else None
+        body: dict = {
+            "message": "auto: portfolio update",
+            "content": base64.b64encode(content.encode("utf-8")).decode(),
+            "branch":  _GITHUB_BRANCH,
+        }
+        if sha:
+            body["sha"] = sha
+        _req.put(url, json=body, headers=hdrs, timeout=15)
+    except Exception:
+        pass
+
 
 def _load() -> dict:
+    # 로컬 파일 없으면 GitHub에서 복구 시도 (Render 재시작 대비)
+    if not os.path.exists(PORTFOLIO_FILE):
+        _pull_from_github()
     if not os.path.exists(PORTFOLIO_FILE):
         return {"positions": {}}
     try:
@@ -19,8 +81,11 @@ def _load() -> dict:
 
 
 def _save(data: dict):
+    content = json.dumps(data, ensure_ascii=False, indent=2)
     with open(PORTFOLIO_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write(content)
+    # 응답 지연 없이 백그라운드에서 GitHub 동기화
+    threading.Thread(target=_push_to_github, args=(content,), daemon=True).start()
 
 
 def get_positions() -> dict:

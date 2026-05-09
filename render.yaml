@@ -7,4 +7,8 @@
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: GITHUB_TOKEN
+        sync: false   # Render 대시보드에서 직접 입력 (GitHub PAT)
+      - key: GITHUB_REPO
+        value: baebae6ae/trade2
     plan: free
