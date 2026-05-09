@@ -325,7 +325,6 @@ async function confirmBuy() {
     method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       ticker: _currentTicker, name: _currentName, qty, price,
-      entry_atr: _currentATR || null,
     })
   }).then(r => r.json());
   closeTradeModal();

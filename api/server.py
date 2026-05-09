@@ -18,7 +18,7 @@ from engine.fis       import calc_fis, make_judgment, calc_entry_score
 from engine.chart     import render_main_chart, render_mini_chart
 from engine.market    import get_market_summary
 from engine.scanner   import scan_market
-from engine.portfolio import buy as port_buy, sell as port_sell, get_positions
+from engine.portfolio import buy as port_buy, sell as port_sell, get_positions, update_trailing_stop
 
 BASE_DIR   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -291,31 +291,29 @@ def api_portfolio():
                     "summary_l1": "현재 차트 분석 데이터를 불러오지 못했습니다.",
                     "setup_name": "정보 부족",
                 }
-            qty     = pos["quantity"]
-            avg     = pos["avg_price"]
-            value   = round(cur * qty, 2)
-            cost    = round(avg * qty, 2)
-            profit  = round(value - cost, 2)
-            pct     = round((profit / cost * 100) if cost > 0 else 0, 2)
-            trailing_stop = signal.get("trailing_stop")
-            ema20_v       = signal.get("ema20", 0)
-            entry_atr     = pos.get("entry_atr")
-            target1 = round(avg + entry_atr * 2, 4) if entry_atr else None
-            target2 = round(avg + entry_atr * 4, 4) if entry_atr else None
+            qty    = pos["quantity"]
+            avg    = pos["avg_price"]
+            value  = round(cur * qty, 2)
+            cost   = round(avg * qty, 2)
+            profit = round(value - cost, 2)
+            pct    = round((profit / cost * 100) if cost > 0 else 0, 2)
+
+            # ── 래칫 트레일링 손절 ────────────────────────────
+            today_ts  = signal.get("trailing_stop")  # high20 - ATR*2
+            ratchet_ts = update_trailing_stop(ticker, today_ts) if today_ts else pos.get("max_trailing_stop")
+            ema20_v   = signal.get("ema20", 0)
+
             flags = []
-            if trailing_stop:
-                if cur < trailing_stop:
+            if ratchet_ts:
+                if cur < ratchet_ts:
                     flags.append({"type": "danger",  "msg": "🚨 손절선 이탈"})
-                elif cur <= trailing_stop * 1.02:
+                elif cur <= ratchet_ts * 1.02:
                     flags.append({"type": "warning", "msg": "⚠ 손절 근접"})
             if ema20_v and cur < ema20_v:
                 flags.append({"type": "caution", "msg": "📉 EMA20 하회"})
             if signal.get("fis") and signal["fis"] > 60:
                 flags.append({"type": "hot",     "msg": "🔥 과열 구간"})
-            if target2 and cur >= target2:
-                flags.append({"type": "target2", "msg": "🎯 2차 익절 도달"})
-            elif target1 and cur >= target1:
-                flags.append({"type": "target1", "msg": "✅ 1차 익절 도달"})
+
             enriched.append({
                 "ticker":        ticker,
                 "name":          pos["name"],
@@ -334,10 +332,8 @@ def api_portfolio():
                 "signal_label":  signal["label"],
                 "signal_summary": signal["summary_l1"],
                 "setup_name":    signal["setup_name"],
-                "trailing_stop": trailing_stop,
+                "trailing_stop": ratchet_ts,
                 "ema20":         ema20_v,
-                "target1":       target1,
-                "target2":       target2,
                 "flags":         flags,
             })
         total_cost   = round(sum(p["cost"]   for p in enriched), 2)
@@ -363,19 +359,15 @@ def api_portfolio():
 
 @app.route("/api/portfolio/buy", methods=["POST"])
 def api_buy():
-    body      = request.get_json(silent=True) or {}
-    ticker    = body.get("ticker", "").strip().upper()
-    name      = body.get("name", ticker)
-    qty       = int(body.get("qty", 0))
-    price     = float(body.get("price", 0))
-    entry_atr = body.get("entry_atr")
+    body   = request.get_json(silent=True) or {}
+    ticker = body.get("ticker", "").strip().upper()
+    name   = body.get("name", ticker)
+    qty    = int(body.get("qty", 0))
+    price  = float(body.get("price", 0))
     if not ticker:
         return jsonify({"ok": False, "error": "ticker 필요"}), 400
     try:
-        result = port_buy(
-            ticker, name, qty, price,
-            entry_atr=float(entry_atr) if entry_atr else None,
-        )
+        result = port_buy(ticker, name, qty, price)
         return jsonify({"ok": True, "position": result})
     except ValueError as e:
         return jsonify({"ok": False, "error": str(e)}), 400

@@ -27,8 +27,7 @@ def get_positions() -> dict:
     return _load().get("positions", {})
 
 
-def buy(ticker: str, name: str, qty: int, price: float,
-        entry_atr: float = None) -> dict:
+def buy(ticker: str, name: str, qty: int, price: float) -> dict:
     """신규 진입 또는 추가 매수. 평단가 가중평균 재계산."""
     if qty <= 0:
         raise ValueError("수량은 1 이상이어야 합니다.")
@@ -47,13 +46,12 @@ def buy(ticker: str, name: str, qty: int, price: float,
             "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "qty": qty, "price": price,
         })
-        # entry_atr는 신규 진입 시에만 기록, 추가매수에선 유지
     else:
         pos[ticker] = {
-            "name":      name,
-            "quantity":  qty,
-            "avg_price": price,
-            "entry_atr": round(entry_atr, 4) if entry_atr else None,
+            "name":               name,
+            "quantity":           qty,
+            "avg_price":          price,
+            "max_trailing_stop":  None,   # 래칫: 한번 올라간 손절선은 안 내려옴
             "buys": [{
                 "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "qty": qty, "price": price,
@@ -61,6 +59,20 @@ def buy(ticker: str, name: str, qty: int, price: float,
         }
     _save(data)
     return pos[ticker]
+
+
+def update_trailing_stop(ticker: str, new_ts: float) -> float | None:
+    """래칫 방식으로 max_trailing_stop 갱신. 새 값이 더 크면 저장하고 반환."""
+    data = _load()
+    pos  = data["positions"]
+    if ticker not in pos:
+        return None
+    current_max = pos[ticker].get("max_trailing_stop") or 0
+    if new_ts > current_max:
+        pos[ticker]["max_trailing_stop"] = round(new_ts, 4)
+        _save(data)
+        return round(new_ts, 4)
+    return current_max if current_max > 0 else None
 
 
 def sell(ticker: str, qty: int) -> dict:

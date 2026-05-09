@@ -301,8 +301,7 @@ async function confirmScanBuy() {
     const res = await fetch("/api/portfolio/buy", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ticker: _scanTicker, name: _scanName, qty, price,
-                            entry_atr: _scanATR || null})
+      body: JSON.stringify({ticker: _scanTicker, name: _scanName, qty, price})
     }).then(r => r.json());
     closeScanBuyModal();
     if (res.ok) showToast(`${_scanName} ${qty}주 진입 등록 완료`);
