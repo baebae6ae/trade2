@@ -51,6 +51,19 @@
           "price": 1309000.0
         }
       ]
+    },
+    "005380.KS": {
+      "name": "현대차",
+      "quantity": 2,
+      "avg_price": 540000.0,
+      "max_trailing_stop": null,
+      "buys": [
+        {
+          "date": "2026-05-09 16:59",
+          "qty": 2,
+          "price": 540000.0
+        }
+      ]
     }
   }
 }
