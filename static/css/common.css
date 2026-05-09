@@ -543,20 +543,51 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 
 
 /* ═══════════════════════════════════════════════
-   Neumorphism System (Dark)
+   Glassmorphism System (Dark Frosted)
 ═══════════════════════════════════════════════ */
 :root {
-  --nm-raised:    -3px -3px 8px rgba(255,255,255,0.045), 4px 4px 14px rgba(0,0,0,0.55);
-  --nm-raised-sm: -2px -2px 5px rgba(255,255,255,0.035), 2px 2px 8px rgba(0,0,0,0.45);
-  --nm-inset:     inset -2px -2px 5px rgba(255,255,255,0.025), inset 2px 2px 8px rgba(0,0,0,0.45);
-  --nm-btn:       -1px -1px 4px rgba(255,255,255,0.04), 2px 2px 6px rgba(0,0,0,0.4);
+  --glass-bg:      rgba(255,255,255,0.06);
+  --glass-bg2:     rgba(255,255,255,0.10);
+  --glass-bg3:     rgba(255,255,255,0.04);
+  --glass-border:  rgba(255,255,255,0.14);
+  --glass-border2: rgba(255,255,255,0.08);
+  --glass-shadow:  0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset;
+  --glass-shadow-sm: 0 4px 16px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.06) inset;
+  --glass-blur:    blur(16px) saturate(180%);
+  --glass-blur-sm: blur(10px) saturate(160%);
 }
 
-/* Neumorphism 적용 공통 요소 */
-.topbar-nav       { box-shadow: var(--nm-raised-sm); }
-.ver              { box-shadow: var(--nm-inset); }
-.search-input     { box-shadow: var(--nm-inset); }
-.search-input:focus { box-shadow: 0 0 0 3px var(--accent-glow), var(--nm-inset); }
+/* Glassmorphism 공통 요소 */
+.topbar-nav {
+  background: rgba(255,255,255,0.07) !important;
+  border: 1px solid var(--glass-border) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  box-shadow: var(--glass-shadow-sm);
+}
+.ver {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border2) !important;
+  backdrop-filter: var(--glass-blur-sm);
+}
+.search-input {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border2) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  box-shadow: none;
+}
+.search-input:focus {
+  background: var(--glass-bg2) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.search-btn {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border2) !important;
+}
+.search-btn:hover {
+  background: var(--glass-bg2) !important;
+}
 
 /* ── Mobile Bottom Navigation ──────────────── */
 .mobile-nav {
@@ -570,7 +601,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   z-index: 200;
   justify-content: space-around;
   align-items: stretch;
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.5), var(--nm-raised);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.07) inset;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .mn-item {
@@ -604,3 +635,5 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   .search-input { font-size: 12px; }
   .search-input::placeholder { font-size: 11px; }
 }
+
+

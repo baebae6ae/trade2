@@ -178,14 +178,10 @@ def _kumo_check_one(ticker_name):
         if brk_idx is None:
             return {"ticker": ticker, "name": name, "ok": False}
 
-        # ── 조건 3: 돌파 직전 20주+ 구름 아래 ──
-        below_cnt = 0
-        for i in range(brk_idx - 1, max(0, brk_idx - 80), -1):
-            if below[i] == 1:
-                below_cnt += 1
-            else:
-                break
-        if below_cnt < 8:
+        # ── 조건 3: 돌파 전 50주 중 누적 구름 아래 10주 이상 ──
+        look_back = slice(max(0, brk_idx - 50), brk_idx)
+        below_cnt = int(__import__('numpy').sum(below[look_back]))
+        if below_cnt < 10:
             return {"ticker": ticker, "name": name, "ok": False}
 
         # ── 조건 4: 구름 반전(Kumo Twist) ─ 돌파 ±8주 내 ──
@@ -248,5 +244,6 @@ def scan_kumo_breakout(market: str) -> list:
                 results.append(r)
     results.sort(key=lambda x: x.get("below_weeks", 0), reverse=True)
     return results
+
 
 

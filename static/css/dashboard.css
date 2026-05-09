@@ -291,45 +291,6 @@
 @media (min-width: 861px) { .ms-body { grid-template-columns: 300px 1fr; } }
 
 
-/* ═══════════════════════════════════════════════
-   Neumorphism — Dashboard 컴포넌트
-═══════════════════════════════════════════════ */
-.market-section {
-  box-shadow: var(--nm-raised) !important;
-}
-.h52-card {
-  box-shadow: var(--nm-raised);
-}
-.h52-card:hover {
-  box-shadow: var(--nm-raised), 0 0 0 1px rgba(245,158,11,0.1) !important;
-}
-.portfolio-wrap {
-  box-shadow: var(--nm-raised) !important;
-}
-.ms-map-body {
-  background: rgba(0,0,0,0.15);
-  border-radius: var(--radius);
-  box-shadow: var(--nm-inset);
-  padding: 10px;
-}
-.hm-tab, .h52-tab {
-  box-shadow: var(--nm-btn);
-}
-.hm-tab:hover, .h52-tab:hover {
-  box-shadow: var(--nm-raised-sm);
-}
-.hm-tab.active, .h52-tab.active {
-  box-shadow: var(--nm-inset);
-}
-.ms-map-btn {
-  box-shadow: var(--nm-btn);
-}
-.ms-map-btn:hover {
-  box-shadow: var(--nm-raised-sm);
-}
-.ps-item {
-  box-shadow: var(--nm-inset);
-}
 
 /* ── 히트맵 설명 텍스트 ───────────────────── */
 .hm-desc {
@@ -383,4 +344,75 @@
   /* 마켓 헤더 */
   .ms-title { font-size: 13px; }
   .ms-flag  { font-size: 17px; }
+}
+
+/* ═══════════════════════════════════════════════
+   Glassmorphism — Dashboard 컴포넌트
+═══════════════════════════════════════════════ */
+.market-section {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  box-shadow: var(--glass-shadow) !important;
+}
+.ms-head {
+  background: rgba(255,255,255,0.04) !important;
+}
+.h52-card {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border2) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  box-shadow: var(--glass-shadow-sm);
+}
+.h52-card:hover {
+  background: var(--glass-bg2) !important;
+  border-color: rgba(245,158,11,0.35) !important;
+  box-shadow: var(--glass-shadow), 0 0 0 1px rgba(245,158,11,0.15) !important;
+}
+.portfolio-wrap {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  box-shadow: var(--glass-shadow) !important;
+}
+.ms-map-body {
+  background: rgba(0,0,0,0.2);
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border2);
+  backdrop-filter: var(--glass-blur-sm);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+  padding: 10px;
+}
+.hm-tab, .h52-tab {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border2) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: all 0.18s;
+}
+.hm-tab:hover, .h52-tab:hover {
+  background: var(--glass-bg2) !important;
+  border-color: var(--glass-border) !important;
+}
+.hm-tab.active, .h52-tab.active {
+  background: rgba(129,140,248,0.15) !important;
+  border-color: rgba(129,140,248,0.4) !important;
+  box-shadow: 0 0 12px rgba(129,140,248,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+.ms-map-btn {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border2) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.ms-map-btn:hover {
+  background: var(--glass-bg2) !important;
+}
+.ps-item {
+  background: rgba(255,255,255,0.03) !important;
+}
+.portfolio-table th {
+  background: rgba(0,0,0,0.25) !important;
 }

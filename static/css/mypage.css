@@ -266,24 +266,6 @@
 }
 .btn-part-sell:hover { background: rgba(96,165,250,0.18); }
 
-/* ═══════════════════════════════════════════════
-   Neumorphism — Mypage
-═══════════════════════════════════════════════ */
-.mp-card {
-  box-shadow: var(--nm-raised);
-}
-.mp-card:hover {
-  box-shadow: var(--nm-raised), 0 0 0 1px rgba(148,163,184,0.15) !important;
-}
-.mp-analysis {
-  box-shadow: var(--nm-raised);
-}
-.mp-analysis-card {
-  box-shadow: var(--nm-inset);
-}
-.mp-table-wrap {
-  box-shadow: var(--nm-raised) !important;
-}
 
 /* ── Mypage Mobile Responsive ───────────────── */
 @media (max-width: 768px) {
@@ -299,4 +281,39 @@
   .mp-summary         { grid-template-columns: 1fr 1fr; }
   .mp-analysis-grid   { grid-template-columns: 1fr; }
   .mp-card-value      { font-size: 18px; }
+}
+
+/* ═══════════════════════════════════════════════
+   Glassmorphism — Mypage
+═══════════════════════════════════════════════ */
+.mp-card {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border2) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  box-shadow: var(--glass-shadow-sm);
+}
+.mp-card:hover {
+  background: var(--glass-bg2) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+.mp-analysis {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border2) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  box-shadow: var(--glass-shadow-sm);
+}
+.mp-analysis-card {
+  background: rgba(0,0,0,0.2) !important;
+  border: 1px solid var(--glass-border2) !important;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.2);
+}
+.mp-table-wrap {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  box-shadow: var(--glass-shadow) !important;
 }
