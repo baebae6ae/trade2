@@ -38,6 +38,19 @@
           "price": 164800.0
         }
       ]
+    },
+    "000660.KS": {
+      "name": "SK하이닉스",
+      "quantity": 1,
+      "avg_price": 1309000.0,
+      "max_trailing_stop": null,
+      "buys": [
+        {
+          "date": "2026-05-09 16:56",
+          "qty": 1,
+          "price": 1309000.0
+        }
+      ]
     }
   }
 }
