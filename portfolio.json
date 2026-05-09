@@ -82,7 +82,7 @@
       "name": "Posco Future M Co., Ltd.",
       "quantity": 4,
       "avg_price": 260750.0,
-      "max_trailing_stop": null,
+      "max_trailing_stop": 266357.1429,
       "buys": [
         {
           "date": "2026-05-09 17:41",
