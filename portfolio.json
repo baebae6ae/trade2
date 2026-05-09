@@ -17,7 +17,7 @@
       "name": "오픈엣지테크놀로지",
       "quantity": 39,
       "avg_price": 20756.0,
-      "max_trailing_stop": null,
+      "max_trailing_stop": 19931.4286,
       "buys": [
         {
           "date": "2026-05-09 16:51",
