@@ -25,7 +25,7 @@
 
 .ms-body {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 260px 1fr;
   min-height: 180px;
 }
 @media (max-width: 860px) {
@@ -33,9 +33,13 @@
 }
 
 /* ── Quote List ──────────────────────────────── */
-.ms-quotes-col { display: none; }
+.ms-quotes-col {
+  display: flex;
+  flex-direction: column;
   border-right: 1px solid var(--border);
   padding: 8px 0;
+  min-width: 0;
+  overflow: hidden;
 }
 .ms-quotes { display: flex; flex-direction: column; }
 
@@ -281,16 +285,12 @@
 
 .hm-canvas {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  min-height: 320px;
-  max-height: 70vh;
+  height: 420px;
   overflow: hidden;
 }
 .hm-canvas svg { border-radius: 6px; }
 
-/* 마켓맵 컨테이너 — aspect-ratio로 비율 유지 */
 .ms-map-body { padding-bottom: 4px; }
-/* ms-quotes-col이 항상 hidden이므로 ms-body는 항상 1fr */
 
 
 
@@ -315,7 +315,7 @@
   .ms-quotes-col { display: none; border-right: none; border-bottom: 1px solid var(--border); }
 
   /* 히트맵 높이 */
-  .hm-canvas { min-height: 280px; }
+  .hm-canvas { height: 280px; }
 
   /* 52주 신고가 카드 — 2열 */
   .h52-cards { grid-template-columns: repeat(2, 1fr); }
@@ -421,6 +421,8 @@
 .portfolio-table th {
   background: rgba(255,255,255,0.05) !important;
 }
+
+
 
 
 
