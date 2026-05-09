@@ -262,7 +262,7 @@ def search_ticker(query: str) -> list:
         return []
 
     compact = q.replace(" ", "").lower()
-    ranked = {}  # symbol -> {name, score} (중복 제거용)
+    ranked = {}  # symbol -> {name, score, exchange} (중복 제거용)
     
     # ─────────────────────────────────────────────
     # Step 1: ALL_STOCKS에서 검색 (하드코딩된 우선)
@@ -293,20 +293,50 @@ def search_ticker(query: str) -> list:
             score += 10
 
         if score > 0:
-            ranked[symbol_u] = {"name": name, "score": score}
+            ranked[symbol_u] = {
+                "name": name,
+                "score": score,
+                "exchange": "KRX" if symbol_u.endswith((".KS", ".KQ")) else "US",
+            }
 
     # ─────────────────────────────────────────────
-    # Step 2: 결과 없으면 yfinance 동적 검색
+    # Step 2: yfinance 검색 fallback (부분 검색 지원)
     # ─────────────────────────────────────────────
-    if not ranked:
+    if len(ranked) < 8:
+        _merge_yf_search_results(ranked, q, compact)
+
+    # 6자리 숫자 티커는 KRX 접미사(.KS/.KQ) 자동 보정
+    if len(ranked) < 8 and compact.isdigit() and len(compact) == 6:
+        for suffix in (".KS", ".KQ"):
+            sym = f"{compact}{suffix}"
+            if sym in NAME_MAP and sym not in ranked:
+                ranked[sym] = {
+                    "name": NAME_MAP[sym],
+                    "score": 82,
+                    "exchange": "KRX",
+                }
+
+    # ticker 직접 조회 fallback (yfinance 검색 결과가 적을 때)
+    if len(ranked) < 8:
         try:
-            # ticker 직접 조회 (정확히 일치하는 경우)
             ticker_normalized = q.upper()
-            if len(ticker_normalized) <= 10:
+            is_direct_ticker_candidate = (
+                "." in ticker_normalized or len(ticker_normalized) <= 4
+            )
+            if (
+                len(ticker_normalized) <= 12
+                and _looks_like_ticker(ticker_normalized)
+                and not compact.isdigit()
+                and is_direct_ticker_candidate
+            ):
                 symbol, name = _get_from_universe(ticker_normalized)
-                if symbol:
-                    ranked[symbol] = {"name": name, "score": 80}
-        except:
+                if symbol and symbol.upper() not in ranked and name != ticker_normalized:
+                    ranked[symbol.upper()] = {
+                        "name": name,
+                        "score": 70,
+                        "exchange": "KRX" if symbol.upper().endswith((".KS", ".KQ")) else "US",
+                    }
+        except Exception:
             pass
 
     # ─────────────────────────────────────────────
@@ -317,7 +347,7 @@ def search_ticker(query: str) -> list:
         results.append({
             "symbol": symbol,
             "name": data["name"],
-            "exchange": "KRX" if symbol.endswith((".KS", ".KQ")) else "US",
+            "exchange": data.get("exchange", "KRX" if symbol.endswith((".KS", ".KQ")) else "US"),
             "type": "EQUITY",
             "_score": data["score"],
         })
@@ -331,5 +361,62 @@ def _get_from_universe(ticker: str) -> tuple:
     from engine.universe import get_or_fetch_stock_info
     try:
         return get_or_fetch_stock_info(ticker)
-    except:
+    except Exception:
         return None, None
+
+
+def _merge_yf_search_results(ranked: dict, q: str, compact: str) -> None:
+    """yfinance 검색 결과를 ranked에 병합 (부분 검색 지원)."""
+    try:
+        search = yf.Search(q, max_results=20)
+        quotes = getattr(search, "quotes", []) or []
+    except Exception:
+        quotes = []
+
+    for item in quotes:
+        symbol = (item.get("symbol") or "").upper().strip()
+        if not symbol or symbol in ranked:
+            continue
+
+        name = (
+            item.get("shortname")
+            or item.get("longname")
+            or item.get("displayName")
+            or symbol
+        )
+        name_key = name.replace(" ", "").lower()
+        symbol_key = symbol.lower()
+
+        score = 0
+        if symbol_key == compact:
+            score += 88
+        elif symbol_key.startswith(compact):
+            score += 45
+        elif compact in symbol_key:
+            score += 22
+
+        if name_key == compact:
+            score += 72
+        elif name_key.startswith(compact):
+            score += 42
+        elif compact in name_key:
+            score += 24
+
+        if score <= 0:
+            continue
+
+        exchange = "KRX" if symbol.endswith((".KS", ".KQ")) else (item.get("exchange") or "US")
+
+        ranked[symbol] = {
+            "name": name,
+            "score": score,
+            "exchange": exchange,
+        }
+
+
+def _looks_like_ticker(value: str) -> bool:
+    text = (value or "").strip()
+    if not text:
+        return False
+    allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.^=-")
+    return all(ch in allowed for ch in text)
