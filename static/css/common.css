@@ -13,8 +13,8 @@
   --accent:  #7C6FF7;
   --gold:    #F0B429;
   --text1:   #E6EDF3;
-  --text2:   #8B949E;
-  --text3:   #484F58;
+  --text2:   #A0AAB8;
+  --text3:   #7A8490;
   --radius:  10px;
   --shadow:  0 4px 24px rgba(0,0,0,0.4);
 }
@@ -330,6 +330,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 }
 .modal-input:focus { border-color: var(--accent); }
 .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+.modal-footer  { display: flex; gap: 8px; margin-top: 20px; }
 .btn-cancel {
   flex: 1; height: 38px; border-radius: 8px;
   background: var(--bg3); border: 1px solid var(--border);
