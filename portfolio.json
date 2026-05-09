@@ -77,6 +77,19 @@
           "price": 210143.0
         }
       ]
+    },
+    "003670.KS": {
+      "name": "Posco Future M Co., Ltd.",
+      "quantity": 4,
+      "avg_price": 260750.0,
+      "max_trailing_stop": null,
+      "buys": [
+        {
+          "date": "2026-05-09 17:41",
+          "qty": 4,
+          "price": 260750.0
+        }
+      ]
     }
   }
 }
