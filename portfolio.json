@@ -103,6 +103,19 @@
           "price": 59000.0
         }
       ]
+    },
+    "017670.KS": {
+      "name": "SK텔레콤",
+      "quantity": 9,
+      "avg_price": 98789.0,
+      "max_trailing_stop": null,
+      "buys": [
+        {
+          "date": "2026-05-09 18:27",
+          "qty": 9,
+          "price": 98789.0
+        }
+      ]
     }
   }
 }
