@@ -17,49 +17,96 @@
 }
 .mypage-hero p { font-size: 14px; color: var(--text2); }
 
-/* ── Stats Row ───────────────────────────────── */
-.stats-row {
+/* ── Summary Cards ───────────────────────────── */
+.mp-summary {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
-  margin-bottom: 36px;
+  margin-bottom: 28px;
 }
-
-.stat-card {
+.mp-card {
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 20px 22px;
-  position: relative;
-  overflow: hidden;
+  position: relative; overflow: hidden;
   transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
 }
-.stat-card::after {
+.mp-card::after {
   content: "";
   position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+  background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, transparent 60%);
   pointer-events: none;
 }
-.stat-card:hover {
+.mp-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 28px rgba(0,0,0,0.45);
   border-color: rgba(148,163,184,0.2);
 }
-
-.stat-label {
+.mp-card-label {
   font-size: 11px; font-weight: 700; color: var(--text3);
   text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;
 }
-.stat-value {
-  font-size: 22px; font-weight: 900; letter-spacing: -1px;
-  color: var(--text1);
+.mp-card-value {
+  font-size: 21px; font-weight: 900; letter-spacing: -0.8px; color: var(--text1);
 }
-.stat-value.bull { color: var(--bull); }
-.stat-value.bear { color: var(--bear); }
-.stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.mp-card-value.bull { color: var(--bull); }
+.mp-card-value.bear { color: var(--bear); }
 
-/* ── Holdings Table ──────────────────────────── */
-.holdings-wrap {
+/* ── Portfolio Analysis ──────────────────────── */
+.mp-analysis {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  margin-bottom: 28px;
+}
+.mp-analysis-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 18px; gap: 12px;
+}
+.mp-analysis-title { font-size: 15px; font-weight: 800; margin-bottom: 5px; }
+.mp-analysis-sub   { font-size: 12px; color: var(--text2); line-height: 1.6; }
+.mp-analysis-badge {
+  flex-shrink: 0;
+  font-size: 12px; font-weight: 800;
+  padding: 5px 14px; border-radius: 20px;
+  color: #fff; white-space: nowrap;
+}
+.mp-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px; margin-bottom: 16px;
+}
+.mp-analysis-card {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.mp-analysis-label {
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;
+}
+.mp-analysis-value {
+  font-size: 20px; font-weight: 900; letter-spacing: -0.5px;
+  color: var(--text1); margin-bottom: 4px;
+}
+.mp-analysis-value.bull { color: var(--bull); }
+.mp-analysis-value.bear { color: var(--bear); }
+.mp-analysis-note { font-size: 11px; color: var(--text3); line-height: 1.5; }
+.mp-analysis-points { display: flex; flex-direction: column; gap: 5px; }
+.mp-analysis-point {
+  font-size: 12px; color: var(--text2); line-height: 1.6;
+  padding-left: 14px; position: relative;
+}
+.mp-analysis-point::before {
+  content: "·"; position: absolute; left: 3px; color: var(--accent);
+  font-size: 16px; line-height: 1.3;
+}
+
+/* ── Table Wrap ──────────────────────────────── */
+.mp-table-wrap {
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -67,28 +114,27 @@
   box-shadow: var(--shadow-sm);
   margin-bottom: 32px;
 }
-
-.holdings-header {
+.mp-table-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 22px;
   background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
   border-bottom: 1px solid var(--border);
 }
-.holdings-title {
+.mp-table-title {
   font-size: 14px; font-weight: 700; color: var(--text1);
-  display: flex; align-items: center; gap: 8px;
 }
-.holdings-count {
-  font-size: 11px; font-weight: 700;
-  background: var(--accent-bg);
-  color: var(--accent);
-  border: 1px solid rgba(129,140,248,0.2);
-  padding: 2px 9px; border-radius: 20px;
+.mp-refresh-btn {
+  padding: 6px 14px; border-radius: 7px;
+  font-size: 12px; font-weight: 700;
+  background: var(--accent-bg); color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.25);
+  transition: all 0.18s; cursor: pointer;
 }
+.mp-refresh-btn:hover { background: rgba(129,140,248,0.2); }
 
-.holdings-table-wrap { overflow-x: auto; }
-.holdings-table { width: 100%; border-collapse: collapse; }
-.holdings-table th {
+/* ── Table ───────────────────────────────────── */
+.mp-table { width: 100%; border-collapse: collapse; }
+.mp-table th {
   padding: 10px 18px;
   background: var(--bg);
   color: var(--text3);
@@ -97,69 +143,99 @@
   text-align: right; white-space: nowrap;
   border-bottom: 1px solid var(--border);
 }
-.holdings-table th:first-child { text-align: left; }
-.holdings-table td {
+.mp-table th:first-child { text-align: left; }
+.mp-table td {
   padding: 14px 18px;
   border-top: 1px solid var(--border2);
   font-size: 13px; text-align: right;
   color: var(--text1); white-space: nowrap;
+  vertical-align: middle;
   transition: background 0.15s;
 }
-.holdings-table td:first-child { text-align: left; }
-.holdings-table tr:hover td { background: rgba(255,255,255,0.025); }
+.mp-table td:first-child { text-align: left; }
+.mp-table tbody tr:hover td { background: rgba(255,255,255,0.025); }
+.mp-table .mp-bull { color: var(--bull); font-weight: 700; }
+.mp-table .mp-bear { color: var(--bear); font-weight: 700; }
 
-.ht-name   { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; }
-.ht-ticker { font-size: 11px; color: var(--text3); margin-top: 2px; }
-.ht-bull   { color: var(--bull); font-weight: 700; }
-.ht-bear   { color: var(--bear); font-weight: 700; }
-
-/* ── Trailing Stop Display ───────────────────── */
-.ts-info {
-  display: flex; flex-direction: column; gap: 3px;
-}
-.ts-price {
-  font-size: 12px; font-weight: 700;
-  color: var(--gold);
-}
-.ts-gap {
-  font-size: 10px; color: var(--text3);
-}
-.ts-badge {
+/* ── Stock Cell ──────────────────────────────── */
+.mp-name   { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 3px; }
+.mp-ticker { font-size: 11px; color: var(--text3); margin-bottom: 5px; }
+.mp-setup-chip {
   display: inline-block;
   font-size: 10px; font-weight: 700;
-  padding: 2px 8px; border-radius: 20px;
-  background: rgba(251,191,36,0.1);
-  color: var(--gold);
-  border: 1px solid rgba(251,191,36,0.25);
-}
-
-/* ── Action Buttons ──────────────────────────── */
-.ht-btn {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 5px 12px; border-radius: 7px;
-  font-size: 12px; font-weight: 700;
-  transition: all 0.18s; cursor: pointer;
-}
-.ht-btn-analyze {
-  background: rgba(129,140,248,0.1); color: var(--accent);
+  padding: 1px 7px; border-radius: 20px;
+  background: var(--accent-bg); color: var(--accent);
   border: 1px solid rgba(129,140,248,0.2);
 }
-.ht-btn-analyze:hover { background: rgba(129,140,248,0.2); }
-.ht-btn-sell {
-  background: rgba(96,165,250,0.08); color: var(--bear);
-  border: 1px solid rgba(96,165,250,0.2);
+
+/* ── Signal / FIS badges ─────────────────────── */
+.mp-signal-row  { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.mp-signal {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 6px;
+  border-width: 1px; border-style: solid;
 }
-.ht-btn-sell:hover { background: rgba(96,165,250,0.18); }
+.mp-flag {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 6px;
+}
+.mp-flag-hot { background: rgba(244,63,94,0.12); color: var(--bull); border: 1px solid rgba(244,63,94,0.25); }
+
+/* ── Risk Rows (Trailing stop / EMA20) ───────── */
+.mp-risk-row {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 11px; color: var(--text2);
+  padding: 4px 8px; border-radius: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  margin-top: 4px;
+}
+.mp-risk-label { color: var(--text3); font-weight: 600; }
+.mp-risk-value { font-weight: 700; color: var(--text1); }
+.mp-risk-pct   { font-size: 10px; color: var(--text3); }
+.mp-stop-broken { border-color: rgba(244,63,94,0.35); background: rgba(244,63,94,0.07); }
+.mp-stop-near   { border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.07); }
+.mp-ema-below   { border-color: rgba(96,165,250,0.3);  background: rgba(96,165,250,0.07); }
+.mp-warn-badge  {
+  font-size: 10px; font-weight: 700;
+  padding: 1px 7px; border-radius: 20px;
+  background: rgba(251,191,36,0.15); color: #FBBF24;
+}
+.mp-warn-badge.mp-danger  { background: rgba(244,63,94,0.15); color: var(--bull); }
+.mp-warn-badge.mp-caution { background: rgba(96,165,250,0.12); color: var(--bear); }
+
+/* ── Action Buttons ──────────────────────────── */
+.mp-actions { display: flex; gap: 5px; justify-content: flex-end; }
+.mp-btn {
+  padding: 5px 11px; border-radius: 7px;
+  font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: all 0.18s;
+  white-space: nowrap;
+}
+.mp-btn-analyze {
+  background: rgba(129,140,248,0.1); color: var(--accent);
+  border: 1px solid rgba(129,140,248,0.22);
+}
+.mp-btn-analyze:hover { background: rgba(129,140,248,0.2); }
+.mp-btn-buy {
+  background: rgba(34,197,94,0.08); color: #4ADE80;
+  border: 1px solid rgba(34,197,94,0.22);
+}
+.mp-btn-buy:hover { background: rgba(34,197,94,0.18); }
+.mp-btn-sell {
+  background: rgba(96,165,250,0.08); color: var(--bear);
+  border: 1px solid rgba(96,165,250,0.22);
+}
+.mp-btn-sell:hover { background: rgba(96,165,250,0.18); }
 
 /* ── Empty State ─────────────────────────────── */
-.empty-holdings {
-  padding: 64px 24px;
-  text-align: center;
+.mp-empty {
+  padding: 64px 24px; text-align: center;
 }
-.eh-icon { font-size: 40px; margin-bottom: 14px; opacity: 0.45; }
-.eh-title { font-size: 16px; font-weight: 700; color: var(--text1); margin-bottom: 8px; }
-.eh-sub   { font-size: 13px; color: var(--text2); margin-bottom: 22px; line-height: 1.7; }
-.eh-cta {
+.mp-empty-icon  { font-size: 40px; margin-bottom: 14px; opacity: 0.5; }
+.mp-empty-title { font-size: 17px; font-weight: 700; color: var(--text1); margin-bottom: 8px; }
+.mp-empty-sub   { font-size: 13px; color: var(--text2); margin-bottom: 22px; line-height: 1.7; }
+.ep-scan-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 11px 24px;
   background: linear-gradient(135deg, rgba(129,140,248,0.15) 0%, rgba(34,211,238,0.08) 100%);
@@ -168,98 +244,24 @@
   color: var(--accent); font-size: 13px; font-weight: 700;
   text-decoration: none; transition: all 0.2s;
 }
-.eh-cta:hover {
+.ep-scan-btn:hover {
   background: linear-gradient(135deg, rgba(129,140,248,0.25) 0%, rgba(34,211,238,0.14) 100%);
   box-shadow: 0 0 16px rgba(129,140,248,0.15);
 }
 
-/* ── History / Log ───────────────────────────── */
-.trade-log-wrap {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-}
-.log-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 16px 22px;
-  background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
-  border-bottom: 1px solid var(--border);
-  font-size: 14px; font-weight: 700; color: var(--text1);
-}
-.log-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.log-table th {
-  padding: 9px 18px;
-  background: var(--bg);
-  color: var(--text3);
-  font-size: 11px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.5px;
-  text-align: right; white-space: nowrap;
-  border-bottom: 1px solid var(--border);
-}
-.log-table th:first-child { text-align: left; }
-.log-table td {
-  padding: 11px 18px;
-  border-top: 1px solid var(--border2);
-  text-align: right; color: var(--text1); white-space: nowrap;
-}
-.log-table td:first-child { text-align: left; color: var(--text2); }
-.log-table tr:hover td { background: rgba(255,255,255,0.025); }
-
-/* ── Chart Modal in Mypage ───────────────────── */
-.chart-modal-box {
-  background: var(--bg2);
-  border: 1px solid rgba(148,163,184,0.12);
-  border-radius: var(--radius-xl);
-  width: 90%; max-width: 920px; max-height: 90vh;
-  overflow: hidden; display: flex; flex-direction: column;
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(129,140,248,0.06);
-  animation: slideUp 0.25s cubic-bezier(0.4,0,0.2,1);
-}
-.chart-modal-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 16px 22px; border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
-}
-.chart-modal-title { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
-.cmo-full-btn {
-  padding: 6px 14px; border-radius: 7px;
-  font-size: 12px; font-weight: 700;
-  background: var(--accent-bg); color: var(--accent);
-  border: 1px solid rgba(129,140,248,0.25); transition: all 0.18s;
-}
-.cmo-full-btn:hover { background: rgba(129,140,248,0.2); }
-.cmo-close-btn {
-  width: 30px; height: 30px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 7px; font-size: 16px;
-  color: var(--text3); background: var(--bg3);
-  border: 1px solid var(--border); transition: all 0.15s;
-}
-.cmo-close-btn:hover { color: var(--text1); background: var(--bg4); }
-
-/* ── Sell Modal Buttons ──────────────────────── */
+/* ── Modal Buttons ───────────────────────────── */
 .btn-full-sell {
-  padding: 10px 18px; border-radius: 8px;
+  padding: 9px 18px; border-radius: 8px;
   font-size: 13px; font-weight: 700; cursor: pointer;
   background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
   color: #fff; border: none;
-  box-shadow: 0 4px 14px rgba(59,130,246,0.3); transition: all 0.2s;
+  box-shadow: 0 3px 12px rgba(59,130,246,0.3); transition: all 0.2s;
 }
-.btn-full-sell:hover { box-shadow: 0 6px 20px rgba(59,130,246,0.45); transform: translateY(-1px); }
+.btn-full-sell:hover { box-shadow: 0 6px 18px rgba(59,130,246,0.45); transform: translateY(-1px); }
 .btn-part-sell {
-  padding: 10px 18px; border-radius: 8px;
+  padding: 9px 18px; border-radius: 8px;
   font-size: 13px; font-weight: 700; cursor: pointer;
   background: rgba(96,165,250,0.08); color: var(--bear);
   border: 1px solid rgba(96,165,250,0.28); transition: all 0.2s;
 }
-.btn-part-sell:hover { background: rgba(96,165,250,0.16); }
-
-/* ── Modal Scenario ──────────────────────────── */
-.modal-scenario-chip {
-  font-size: 11px; font-weight: 700;
-  padding: 3px 10px; border-radius: 20px;
-  background: var(--accent-bg); color: var(--accent);
-  border: 1px solid rgba(129,140,248,0.2);
-}
+.btn-part-sell:hover { background: rgba(96,165,250,0.18); }
