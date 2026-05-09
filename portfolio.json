@@ -56,7 +56,7 @@
       "name": "현대차",
       "quantity": 2,
       "avg_price": 540000.0,
-      "max_trailing_stop": null,
+      "max_trailing_stop": 590428.5714,
       "buys": [
         {
           "date": "2026-05-09 16:59",
