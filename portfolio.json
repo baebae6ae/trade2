@@ -25,6 +25,19 @@
           "price": 20756.0
         }
       ]
+    },
+    "000270.KS": {
+      "name": "기아",
+      "quantity": 6,
+      "avg_price": 164800.0,
+      "max_trailing_stop": null,
+      "buys": [
+        {
+          "date": "2026-05-09 16:55",
+          "qty": 6,
+          "price": 164800.0
+        }
+      ]
     }
   }
 }
