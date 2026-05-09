@@ -43,36 +43,85 @@
 
 <main class="main-content">
 
-  <!-- 한국 시장 -->
-  <section class="section">
-    <div class="section-header">
-      <div class="section-accent"></div>
-      <span class="section-title">🇰🇷 한국 시장</span>
+  <!-- ── 한국 시장 ─────────────────────────────── -->
+  <section class="market-section">
+    <div class="ms-head">
+      <div class="ms-flag-title">
+        <span class="ms-flag">🇰🇷</span>
+        <span class="ms-title">한국 시장</span>
+      </div>
+      <span class="ms-updated" id="krUpdated"></span>
     </div>
-    <div class="index-grid" id="krGrid">
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
+    <div class="ms-body">
+      <div class="ms-quotes-col">
+        <div class="ms-quotes" id="krQuotes">
+          <div class="mq-skeleton"></div>
+          <div class="mq-skeleton"></div>
+          <div class="mq-skeleton"></div>
+        </div>
+      </div>
+      <div class="ms-map-col">
+        <div class="ms-map-head">
+          <span class="ms-map-label">시장 히트맵</span>
+          <button class="ms-map-btn" onclick="loadMarketMap('KR')">↺</button>
+        </div>
+        <div class="ms-map-body" id="krMapBody">
+          <div class="map-loading">히트맵 로딩 중…</div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- 미국 시장 -->
-  <section class="section">
-    <div class="section-header">
-      <div class="section-accent"></div>
-      <span class="section-title">🇺🇸 미국 시장</span>
+  <!-- ── 미국 시장 ─────────────────────────────── -->
+  <section class="market-section">
+    <div class="ms-head">
+      <div class="ms-flag-title">
+        <span class="ms-flag">🇺🇸</span>
+        <span class="ms-title">미국 시장</span>
+      </div>
+      <span class="ms-updated" id="usUpdated"></span>
     </div>
-    <div class="index-grid" id="usGrid">
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
+    <div class="ms-body">
+      <div class="ms-quotes-col">
+        <div class="ms-quotes" id="usQuotes">
+          <div class="mq-skeleton"></div>
+          <div class="mq-skeleton"></div>
+          <div class="mq-skeleton"></div>
+          <div class="mq-skeleton"></div>
+          <div class="mq-skeleton"></div>
+          <div class="mq-skeleton"></div>
+        </div>
+      </div>
+      <div class="ms-map-col">
+        <div class="ms-map-head">
+          <span class="ms-map-label">시장 히트맵</span>
+          <button class="ms-map-btn" onclick="loadMarketMap('US')">↺</button>
+        </div>
+        <div class="ms-map-body" id="usMapBody">
+          <div class="map-loading">히트맵 로딩 중…</div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- 내 포트폴리오 -->
+  <!-- ── 52주 신고가 ────────────────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <span class="section-title">🏔 52주 신고가</span>
+      <span class="section-sub">현재 52주 최고가에 근접한 종목과 연속 주수</span>
+    </div>
+    <div class="high52-tabs">
+      <button class="h52-tab active" onclick="load52h('kospi',this)">KOSPI</button>
+      <button class="h52-tab" onclick="load52h('kosdaq',this)">KOSDAQ</button>
+      <button class="h52-tab" onclick="load52h('us',this)">US</button>
+    </div>
+    <div id="high52Grid" class="high52-grid">
+      <div class="high52-loading">데이터 로딩 중…</div>
+    </div>
+  </section>
+
+  <!-- ── 내 포트폴리오 ──────────────────────────── -->
   <section class="section">
     <div class="section-header">
       <div class="section-accent"></div>
@@ -98,4 +147,3 @@
 <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
-

@@ -16,7 +16,7 @@ from engine.data      import (
 )
 from engine.fis       import calc_fis, make_judgment, calc_entry_score
 from engine.chart     import render_main_chart, render_mini_chart
-from engine.market    import get_market_summary
+from engine.market    import get_market_summary, get_market_map_data, get_52week_highs
 from engine.scanner   import scan_market, scan_kumo_breakout
 from engine.portfolio import buy as port_buy, sell as port_sell, get_positions, update_trailing_stop
 
@@ -134,6 +134,22 @@ def api_market():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+
+@app.route("/api/marketmap/<region>")
+def api_market_map(region: str):
+    try:
+        data = get_market_map_data(region)
+        return jsonify({"ok": True, "data": data})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/market/52h/<market>")
+def api_52week_high(market: str):
+    try:
+        data = get_52week_highs(market)
+        return jsonify({"ok": True, "data": data})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 # ── API: 검색 ─────────────────────────────────────────────
 
 @app.route("/api/search")
@@ -410,4 +426,5 @@ def api_sell():
 
 def create_app():
     return app
+
 

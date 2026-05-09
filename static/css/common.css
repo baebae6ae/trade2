@@ -8,10 +8,10 @@
 /* ── Design Tokens ────────────────────────────── */
 :root {
   /* Backgrounds */
-  --bg:    #060911;
-  --bg2:   #0B1120;
-  --bg3:   #101827;
-  --bg4:   #18243A;
+  --bg: #0C1220;
+  --bg2: #131D30;
+  --bg3: #1A2640;
+  --bg4: #223050;
 
   /* Borders */
   --border:  rgba(148,163,184,0.1);
@@ -540,3 +540,4 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   background: var(--bg2);
   letter-spacing: 0.2px;
 }
+

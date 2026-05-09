@@ -170,7 +170,7 @@ def _kumo_check_one(ticker_name):
 
         # ── 조건 2: 최근 4~16주 내에 구름 돌파 시점 찾기 ──
         brk_idx = None
-        for i in range(n - 16, n):
+        for i in range(n - 24, n):
             if i < 1:
                 continue
             if above[i] == 1 and above[i-1] != 1:
@@ -180,12 +180,12 @@ def _kumo_check_one(ticker_name):
 
         # ── 조건 3: 돌파 직전 20주+ 구름 아래 ──
         below_cnt = 0
-        for i in range(brk_idx - 1, max(0, brk_idx - 60), -1):
+        for i in range(brk_idx - 1, max(0, brk_idx - 80), -1):
             if below[i] == 1:
                 below_cnt += 1
             else:
                 break
-        if below_cnt < 20:
+        if below_cnt < 8:
             return {"ticker": ticker, "name": name, "ok": False}
 
         # ── 조건 4: 구름 반전(Kumo Twist) ─ 돌파 ±8주 내 ──
@@ -211,7 +211,7 @@ def _kumo_check_one(ticker_name):
                 continue
             body = row["Close"] - row["Open"]
             rng_v = row["High"] - row["Low"]
-            if body > 0 and (rng_v == 0 or body / rng_v > 0.4):
+            if body > 0 and (rng_v == 0 or body / rng_v > 0.25):
                 big_candle = True
                 break
 
@@ -224,6 +224,7 @@ def _kumo_check_one(ticker_name):
             "cloud_thin":  round(min_thick, 1),
             "bull_cloud":  bool(bull[-1] == 1),
             "daily_vol":   big_candle,
+            "had_twist":  bool(had_twist),
             "close":       close_v,
         }
     except Exception as e:
@@ -247,3 +248,4 @@ def scan_kumo_breakout(market: str) -> list:
                 results.append(r)
     results.sort(key=lambda x: x.get("below_weeks", 0), reverse=True)
     return results
+
