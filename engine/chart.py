@@ -227,11 +227,11 @@ def _draw_right_price_tag(ax, y: float, text: str, color: str) -> None:
     """가격 축 우측 끝에 수평선 라벨 표시."""
     trans = mtransforms.blended_transform_factory(ax.transAxes, ax.transData)
     ax.text(
-        0.995, y, text,
+        1.028, y, text,
         transform=trans,
-        ha="right", va="center",
-        fontsize=8.2, fontweight="bold", color="#FFFFFF",
-        bbox=dict(facecolor=color, edgecolor=color, boxstyle="round,pad=0.18", alpha=0.94),
+        ha="left", va="center",
+        fontsize=8.0, fontweight="bold", color="#FFFFFF",
+        bbox=dict(facecolor=color, edgecolor=color, boxstyle="round,pad=0.16", alpha=0.94),
         zorder=8,
         clip_on=False,
     )
@@ -268,7 +268,7 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
         4, 1,
         height_ratios=[5, 1, 1, 1],
         hspace=0.04,
-        left=0.045, right=0.95,
+        left=0.045, right=0.90,
         top=0.96, bottom=0.05
     )
     ax_c = fig.add_subplot(gs[0])
@@ -355,7 +355,7 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
     _annotate_price_events(ax_c, df, _recent_true_indices(breakout_mask, limit=3, lookback=120), "돌파", BULL, above=True)
     _annotate_price_events(ax_c, df, _recent_true_indices(ema_reclaim_mask & ~breakout_mask.fillna(False), limit=2, lookback=90), "EMA20 회복", "#FF6F00", above=False)
 
-    ax_c.set_xlim(-1, n + 2)
+    ax_c.set_xlim(-1, n + 3)
     ax_c.legend(loc="upper left", fontsize=6.5,
                 facecolor=BG2, edgecolor=GRID,
                 labelcolor="#222222", ncol=8, framealpha=0.9)
