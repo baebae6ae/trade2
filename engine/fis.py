@@ -575,22 +575,6 @@ def make_judgment(df_fis: pd.DataFrame) -> dict:
     else:
         label, label_color = "강한 하락 우위", "#0D47A1"
 
-    if fis >= 30:
-        sl1 = "추세와 구조가 대체로 상승 쪽에 기울어 있다. 다만 지금 매수할지는 별도의 진입 점수로 분리해서 봐야 한다."
-        sl2 = "보유자는 추세 훼손 전까지 우위가 유지된다. 신규 진입은 과열 추격보다 눌림 확인이 더 중요하다."
-    elif fis >= 5:
-        sl1 = "방향성은 완전히 꺾이지 않았지만 확신도는 아직 중간 수준이다. 추가 확인 없이 강하게 베팅할 구간은 아니다."
-        sl2 = "보유자는 기준선 지지 여부를 우선 보되, 신규 진입은 타이밍 점수와 저항 여유를 함께 봐야 한다."
-    elif fis >= -20:
-        sl1 = "상승 우위라고 보기엔 근거가 약하다. 방향성이 정리되기 전까지는 관망이 합리적이다."
-        sl2 = "보유자는 방어 우선으로 보고, 신규 진입은 추세 복원 신호가 확인될 때까지 미루는 편이 낫다."
-    elif fis >= -50:
-        sl1 = "하락 압력이 우세하다. 단기 반등이 나와도 추세 전환으로 보기엔 이르다."
-        sl2 = "보유자는 손절 기준과 반등 저항 구간을 먼저 점검해야 한다. 공격적 신규 진입은 불리하다."
-    else:
-        sl1 = "차트 구조가 명확히 약세 쪽으로 기울어 있다. 매수 접근은 확률상 불리하다."
-        sl2 = "보유자는 방어 중심 판단이 우선이다. 추세 전환 신호가 새로 생기기 전까지는 보수적으로 보는 편이 맞다."
-
     contributors = {
         "추세": trend,
         "모멘텀": momentum,
@@ -601,6 +585,73 @@ def make_judgment(df_fis: pd.DataFrame) -> dict:
     }
     pos_name = max(contributors, key=contributors.get)
     neg_name = min(contributors, key=contributors.get)
+
+    lead_clues = []
+    if trend >= 14:
+        lead_clues.append("이평 정렬과 추세 기울기가 견조하다")
+    elif trend <= -8:
+        lead_clues.append("이평 구조가 하방 쪽으로 틀어져 있다")
+
+    if momentum >= 8:
+        lead_clues.append("모멘텀 가속이 붙어 탄력이 살아 있다")
+    elif momentum <= -6:
+        lead_clues.append("모멘텀 둔화가 뚜렷해 추격은 불리하다")
+
+    if structure >= 8:
+        lead_clues.append("고점/저점 구조가 우상향으로 유지된다")
+    elif structure <= -6:
+        lead_clues.append("고점/저점 구조가 무너져 반등 신뢰가 낮다")
+
+    if compression >= 8:
+        lead_clues.append("압축 이후 확장 가능성이 열려 있다")
+    elif compression <= -6:
+        lead_clues.append("위치상 저항 부담이 커 상단 여유가 좁다")
+
+    if volume >= 4:
+        lead_clues.append("거래 참여가 붙어 신호 신뢰도가 보강된다")
+    elif volume <= -3:
+        lead_clues.append("거래 참여가 약해 신호 신뢰가 떨어진다")
+
+    if not lead_clues:
+        if fis >= 20:
+            lead_clues.append("방향성은 우상향이나 확신 강도는 중간 수준이다")
+        elif fis <= -20:
+            lead_clues.append("방향성은 하방 우세이며 복원 신호가 부족하다")
+        else:
+            lead_clues.append("방향성 우위가 약해 추가 확인이 필요하다")
+
+    lead_text = " · ".join(lead_clues[:2])
+
+    risk_clues = []
+    if risk <= -15:
+        risk_clues.append("단기 과열/매물 부담이 커 리스크 관리가 우선이다")
+    elif risk <= -8:
+        risk_clues.append("리스크 감점이 누적되어 진입 크기 조절이 필요하다")
+    elif risk >= -3:
+        risk_clues.append("위험 감점이 낮아 관리 가능한 구간이다")
+
+    if rsi >= 72:
+        risk_clues.append(f"RSI {rsi:.1f}로 과열권이라 눌림 확인 후 접근이 유리하다")
+    elif rsi <= 34:
+        risk_clues.append(f"RSI {rsi:.1f} 저점권으로 반등 신호 확인이 핵심이다")
+
+    if rvol >= 1.8:
+        risk_clues.append("거래량 급증 구간이라 방향 확인 봉의 중요도가 높다")
+    elif rvol < 0.8:
+        risk_clues.append("거래량이 약해 돌파 신호의 지속성 검증이 필요하다")
+
+    if fis >= 45:
+        stance = "보유는 추세선 이탈 전까지 우위가 유지되며 신규 진입은 눌림/재돌파 확인이 유리하다"
+    elif fis >= 10:
+        stance = "보유는 중립 관리가 적절하고 신규 진입은 타이밍 점수와 저항 여유를 함께 확인해야 한다"
+    elif fis >= -20:
+        stance = "보유는 방어 비중을 높이고 신규 진입은 추세 복원 신호가 확인될 때까지 대기하는 편이 낫다"
+    else:
+        stance = "보유는 손절 기준 중심 방어가 우선이며 신규 진입은 공격적으로 보기 어렵다"
+
+    sl1 = f"{lead_text}. 핵심 강점은 {pos_name}, 취약 지점은 {neg_name}이며 FIS는 {fis:.1f}이다."
+    sl2 = f"{stance}. {risk_clues[0] if risk_clues else '진입 전 손익비와 손절 기준을 먼저 고정하는 것이 좋다.'} (RSI {rsi:.1f}, RVOL {rvol:.2f}x)"
+
     extra_parts = [f"가장 강한 강점은 {pos_name}이고, 가장 약한 부분은 {neg_name}이다."]
     if compression >= 8 and risk > -8:
         extra_parts.append("과열보다 재정비에 가까운 상태라 돌파 재개 가능성을 볼 수 있다.")
