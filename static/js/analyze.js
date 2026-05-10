@@ -110,6 +110,7 @@ function _bindChartOverlay() {
   const { overlay } = _chartEls();
   if (!overlay) return;
 
+  // ── 마우스 무브 (PC) ──────────────────────────────────────
   overlay.addEventListener("mousemove", e => {
     if (!_chartMeta) return;
     if (_chartPinned) return;
@@ -161,6 +162,115 @@ function _bindChartOverlay() {
     yLabel.style.top = _pct(y);
     yLabel.classList.remove("hidden");
   });
+
+  // ── 터치 무브 (모바일) ────────────────────────────────────
+  overlay.addEventListener("touchmove", e => {
+    if (!_chartMeta || e.touches.length > 1) return;
+    if (_chartPinned) return;
+    
+    const touch = e.touches[0];
+    const { crossX, crossY, xLabel, yLabel } = _chartEls();
+    const rect = overlay.getBoundingClientRect();
+    const x = (touch.clientX - rect.left) / rect.width;
+    const y = (touch.clientY - rect.top) / rect.height;
+    const plot = _chartMeta.plot_area;
+    
+    if (x < plot.left || x > plot.right || y < plot.top || y > plot.bottom) {
+      _hideChartCrosshair();
+      return;
+    }
+
+    let active = null;
+    for (const [panelKey, panel] of Object.entries(_chartMeta.panels || {})) {
+      if (x >= panel.left && x <= panel.right && y >= panel.top && y <= panel.bottom) {
+        active = { key: panelKey, ...panel };
+        break;
+      }
+    }
+    if (!active) {
+      _hideChartCrosshair();
+      return;
+    }
+
+    const dataX = active.x_min + (((x - active.left) / Math.max(0.0001, active.width)) * (active.x_max - active.x_min));
+    const idx = _clamp(Math.round(dataX), 0, Math.max(0, (_chartMeta.count || 1) - 1));
+    const date = _chartMeta.dates?.[idx] || "";
+    const relY = 1 - ((y - active.top) / Math.max(0.0001, active.height));
+    const value = active.y_min + relY * (active.y_max - active.y_min);
+
+    crossX.style.left = _pct(x);
+    crossX.style.top = _pct(plot.top);
+    crossX.style.height = _pct(plot.bottom - plot.top);
+    crossX.classList.remove("hidden");
+
+    crossY.style.left = _pct(active.left);
+    crossY.style.top = _pct(y);
+    crossY.style.width = _pct(active.right - active.left);
+    crossY.classList.remove("hidden");
+
+    xLabel.textContent = date;
+    xLabel.style.left = _pct(x);
+    xLabel.style.top = _pct(plot.bottom);
+    xLabel.classList.remove("hidden");
+
+    yLabel.textContent = _chartValueText(active.key, value);
+    yLabel.style.left = _pct(active.right);
+    yLabel.style.top = _pct(y);
+    yLabel.classList.remove("hidden");
+  }, { passive: true });
+
+  // ── 마우스 휠 (기간 선택) ──────────────────────────────────
+  overlay.addEventListener("wheel", e => {
+    e.preventDefault();
+    const periods = ["6mo", "1y", "2y", "5y"];
+    const periodSelect = document.getElementById("periodSelect");
+    if (!periodSelect) return;
+    
+    const currentPeriod = periodSelect.value || "2y";
+    const currentIdx = periods.indexOf(currentPeriod);
+    const nextIdx = e.deltaY > 0 
+      ? (currentIdx + 1) % periods.length
+      : (currentIdx - 1 + periods.length) % periods.length;
+    
+    periodSelect.value = periods[nextIdx];
+    reloadChart();
+  }, { passive: false });
+
+  // ── 터치 핀치 줌 (기간 선택) ──────────────────────────────
+  let _touchStartDist = 0;
+  overlay.addEventListener("touchstart", e => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      _touchStartDist = Math.sqrt(dx * dx + dy * dy);
+    }
+  }, { passive: true });
+
+  overlay.addEventListener("touchmove", e => {
+    if (e.touches.length === 2 && _touchStartDist > 0) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const currentDist = Math.sqrt(dx * dx + dy * dy);
+      const scale = currentDist / _touchStartDist;
+      
+      // 25% 차이 이상 시 기간 변경
+      if (Math.abs(scale - 1) > 0.25) {
+        const periods = ["6mo", "1y", "2y", "5y"];
+        const periodSelect = document.getElementById("periodSelect");
+        if (!periodSelect) return;
+        
+        const currentPeriod = periodSelect.value || "2y";
+        const currentIdx = periods.indexOf(currentPeriod);
+        const nextIdx = scale > 1
+          ? (currentIdx - 1 + periods.length) % periods.length
+          : (currentIdx + 1) % periods.length;
+        
+        periodSelect.value = periods[nextIdx];
+        reloadChart();
+        _touchStartDist = currentDist;
+      }
+    }
+  }, { passive: true });
 
   overlay.addEventListener("mouseleave", () => {
     if (_chartPinned) return;
@@ -610,6 +720,60 @@ function showToast(msg, type = "success") {
   }, 3000);
 }
 
+// ── 수평선 그리기 (평단가, 추적손절) ──────────────────────
+function renderGuideLines(holding, trailingStop) {
+  const { eventLayer } = _chartEls();
+  if (!eventLayer || !_chartMeta) return;
+
+  // 기존 guide line 제거
+  eventLayer.querySelectorAll(".chart-guide-line").forEach(el => el.remove());
+  eventLayer.querySelectorAll(".chart-guide-label").forEach(el => el.remove());
+
+  const pricePanel = _chartMeta.panels?.price;
+  if (!pricePanel) return;
+
+  // ── 평단가 선 ───────────────────────────────
+  if (holding && holding.average_price > 0) {
+    const avgPrice = holding.average_price;
+    const relY = 1 - ((avgPrice - pricePanel.y_min) / (pricePanel.y_max - pricePanel.y_min));
+    const pixelY = pricePanel.top + relY * pricePanel.height;
+
+    const line = document.createElement("div");
+    line.className = "chart-guide-line average-price";
+    line.style.left = _pct(pricePanel.left);
+    line.style.top = _pct(pixelY);
+    line.style.width = _pct(pricePanel.right - pricePanel.left);
+    eventLayer.appendChild(line);
+
+    const label = document.createElement("div");
+    label.className = "chart-guide-label average-price";
+    label.textContent = `평단: ${avgPrice.toLocaleString("ko-KR", { maximumFractionDigits: 0 })}`;
+    label.style.left = _pct(pricePanel.right + 0.01);
+    label.style.top = _pct(pixelY - 0.015);
+    eventLayer.appendChild(label);
+  }
+
+  // ── 추적손절 선 ───────────────────────────────
+  if (trailingStop && trailingStop > 0) {
+    const relY = 1 - ((trailingStop - pricePanel.y_min) / (pricePanel.y_max - pricePanel.y_min));
+    const pixelY = pricePanel.top + relY * pricePanel.height;
+
+    const line = document.createElement("div");
+    line.className = "chart-guide-line trailing-stop";
+    line.style.left = _pct(pricePanel.left);
+    line.style.top = _pct(pixelY);
+    line.style.width = _pct(pricePanel.right - pricePanel.left);
+    eventLayer.appendChild(line);
+
+    const label = document.createElement("div");
+    label.className = "chart-guide-label trailing-stop";
+    label.textContent = `손절: ${trailingStop.toLocaleString("ko-KR", { maximumFractionDigits: 0 })}`;
+    label.style.left = _pct(pricePanel.right + 0.01);
+    label.style.top = _pct(pixelY - 0.015);
+    eventLayer.appendChild(label);
+  }
+}
+
 // ── 종목 차트 분석 ────────────────────────────────────────
 async function loadAnalysis(ticker) {
   _currentTicker = ticker.toUpperCase();
@@ -711,6 +875,13 @@ async function loadAnalysis(ticker) {
       const held = !!pos;
       _heldQty = pos ? Number(pos.quantity || 0) : 0;
       document.getElementById("holdingBadge").style.display = held ? "inline-block" : "none";
+      
+      // 평단가/손절 수평선 렌더링
+      if (pos && pos.avg_price > 0) {
+        // API에서 반환하는 필드명이 avg_price, trailing_stop이므로 변환
+        const holding = { average_price: pos.avg_price };
+        renderGuideLines(holding, pos.trailing_stop || 0);
+      }
     }).catch(() => {});
 
     hideLoading();
