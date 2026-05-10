@@ -29,6 +29,8 @@ function _chartEls() {
     xLabel: document.getElementById("chartXAxisLabel"),
     yLabel: document.getElementById("chartYAxisLabel"),
     tooltip: document.getElementById("chartHoverTooltip"),
+    avglLine: document.getElementById("avglPriceLine"),
+    trailingLine: document.getElementById("trailingStopLine"),
   };
 }
 
@@ -347,12 +349,36 @@ function _applyChartTransform() {
 function _renderChartOverlay(meta) {
   _chartMeta = meta || null;
   _clearPinnedEvent();
-  const { eventLayer } = _chartEls();
+  const { eventLayer, avglLine, trailingLine } = _chartEls();
   if (!eventLayer) return;
   eventLayer.innerHTML = "";
   _hideChartCrosshair();
   _hideChartTooltip();
   _bindChartOverlay();
+  
+  // ── 평단가/추적손절 선 렌더링 ──────────────────────────────
+  if (avglLine) {
+    if (_chartMeta?.avg_price_y !== undefined) {
+      avglLine.style.top = _pct(_chartMeta.avg_price_y);
+      avglLine.style.width = _pct(1); // 전체 폭
+      avglLine.style.left = "0";
+      avglLine.classList.remove("hidden");
+    } else {
+      avglLine.classList.add("hidden");
+    }
+  }
+  
+  if (trailingLine) {
+    if (_chartMeta?.trailing_stop_y !== undefined) {
+      trailingLine.style.top = _pct(_chartMeta.trailing_stop_y);
+      trailingLine.style.width = _pct(1); // 전체 폭
+      trailingLine.style.left = "0";
+      trailingLine.classList.remove("hidden");
+    } else {
+      trailingLine.classList.add("hidden");
+    }
+  }
+  
   if (!_chartMeta) return;
 
   (_chartMeta.events || []).forEach(ev => {

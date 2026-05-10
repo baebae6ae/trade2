@@ -219,6 +219,26 @@ def api_analyze(ticker: str):
         day_change_pct = round((c - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         day_change_abs = round(c - prev_close, 4)
 
+        # ── 평단가/추적손절 선 메타 추가 ────────────────────────
+        positions = get_positions()
+        ticker_pos = positions.get(ticker)
+        if ticker_pos and ticker_pos.get("qty", 0) > 0:
+            price_panel = chart_meta.get("panels", {}).get("price", {})
+            if price_panel:
+                y_min = price_panel.get("y_min", 0)
+                y_max = price_panel.get("y_max", 1)
+                y_height = y_max - y_min if y_max != y_min else 1
+                
+                # 평단가 Y좌표 (0 = top, 1 = bottom)
+                avg_price = ticker_pos.get("avg_price")
+                if avg_price:
+                    chart_meta["avg_price_y"] = 1 - ((avg_price - y_min) / y_height)
+                
+                # 추적손절 Y좌표 (0 = top, 1 = bottom)
+                trailing_stop_val = ticker_pos.get("trailing_stop")
+                if trailing_stop_val:
+                    chart_meta["trailing_stop_y"] = 1 - ((trailing_stop_val - y_min) / y_height)
+
         return jsonify({
             "ok": True, "ticker": ticker, "info": info,
             "judgment": judgment, "chart": chart_b64, "chart_meta": chart_meta, "table": table,
