@@ -64,88 +64,98 @@
     </div>
   </div>
 
-  <!-- 액션 바 + 차트 컨트롤 -->
+  <!-- 액션 바 -->
   <div class="action-bar">
     <button class="action-btn btn-buy-new"   onclick="openBuyModal()">📈 신규 진입</button>
     <button class="action-btn btn-buy-add"   onclick="openBuyModal()">＋ 추가 매수</button>
     <button class="action-btn btn-sell-part" onclick="openSellModal(false)">▼ 부분 매도</button>
     <button class="action-btn btn-sell-full" onclick="openSellModal(true)">✕ 전량 매도</button>
-    <div class="chart-controls">
-      <div class="chart-control-group">
-        <label class="chart-control-label">차트 분석 기간</label>
-        <select id="timeframeSelect" class="period-select" onchange="reloadChart()">
+  </div>
+
+  <!-- 차트 + 사이드바 (2-컬럼) -->
+  <div class="analyze-body">
+
+    <!-- 메인 컨텐츠 -->
+    <div class="chart-main-col">
+      <!-- 차트 제어 바 -->
+      <div class="chart-control-bar">
+        <div class="chart-control-label">차트 분석 기간</div>
+        <select id="timeframeSelect" class="period-select-inline" onchange="reloadChart()">
           <option value="daily" selected>일봉</option>
           <option value="weekly">주봉</option>
           <option value="monthly">월봉</option>
           <option value="yearly">년봉</option>
         </select>
-      </div>
-      <div class="chart-control-group">
-        <select id="periodSelect" class="period-select" onchange="reloadChart()">
+        <select id="periodSelect" class="period-select-inline" onchange="reloadChart()">
           <option value="6mo">6개월</option>
           <option value="1y">1년</option>
           <option value="2y" selected>2년</option>
           <option value="5y">5년</option>
         </select>
       </div>
-    </div>
-  </div>
 
-  <!-- 차트 (풀 너비, 스크롤 없음) -->
-  <div class="analyze-body">
-    <div id="chartStage" class="chart-stage">
-      <img id="mainChart" class="main-chart" alt="차트 로딩 중…">
-      <div id="chartOverlay" class="chart-overlay">
-        <div id="chartEventLayer" class="chart-event-layer"></div>
-        <div id="chartCrosshairX" class="chart-crosshair chart-crosshair-x hidden"></div>
-        <div id="chartCrosshairY" class="chart-crosshair chart-crosshair-y hidden"></div>
-        <div id="chartXAxisLabel" class="chart-axis-label chart-axis-x hidden"></div>
-        <div id="chartYAxisLabel" class="chart-axis-label chart-axis-y hidden"></div>
-        <div id="chartHoverTooltip" class="chart-hover-tooltip hidden"></div>
+      <!-- 차트 -->
+      <div id="chartStage" class="chart-stage">
+        <img id="mainChart" class="main-chart" alt="차트 로딩 중…">
+        <div id="chartOverlay" class="chart-overlay">
+          <div id="chartEventLayer" class="chart-event-layer"></div>
+          <div id="chartCrosshairX" class="chart-crosshair chart-crosshair-x hidden"></div>
+          <div id="chartCrosshairY" class="chart-crosshair chart-crosshair-y hidden"></div>
+          <div id="chartXAxisLabel" class="chart-axis-label chart-axis-x hidden"></div>
+          <div id="chartYAxisLabel" class="chart-axis-label chart-axis-y hidden"></div>
+          <div id="chartHoverTooltip" class="chart-hover-tooltip hidden"></div>
+          <!-- 평단가 및 추적손절 선 -->
+          <div id="avglPriceLine" class="chart-overlay-line avg-price-line hidden"></div>
+          <div id="trailingStopLine" class="chart-overlay-line trailing-stop-line hidden"></div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- 분석 정보 패널 (차트 아래) -->
-  <div class="analysis-panels">
-    <!-- CFIE 종합 판단 -->
-    <div class="sidebar-box">
-      <div class="sbox-header">📊 CFIE 종합 판단</div>
-      <div class="sbox-body">
-        <p id="judgeL1" class="jc-l1"></p>
-        <p id="judgeL2" class="jc-l2"></p>
-        <p id="judgeExtra" class="jc-extra"></p>
+      <!-- 데이터 테이블 -->
+      <div class="table-wrap">
+        <div class="table-title">📋 최근 30일 데이터</div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
       </div>
-      <div id="scoreBars" class="score-bars"></div>
-    </div>
 
-    <!-- 진입 타이밍 분석 -->
-    <div class="sidebar-box">
-      <div class="sbox-header">🎯 진입 타이밍 분석</div>
-      <div class="entry-score-row">
-        <span class="entry-score-label">진입 점수</span>
-        <div class="entry-score-badge" id="entryScoreBadge">—</div>
+      <!-- 사이드바 (아래로 이동) -->
+      <div class="sidebar-below">
+
+        <!-- CFIE 종합 판단 -->
+        <div class="sidebar-box">
+          <div class="sbox-header">📊 CFIE 종합 판단</div>
+          <div class="sbox-body">
+            <p id="judgeL1" class="jc-l1"></p>
+            <p id="judgeL2" class="jc-l2"></p>
+            <p id="judgeExtra" class="jc-extra"></p>
+          </div>
+          <div id="scoreBars" class="score-bars"></div>
+        </div>
+
+        <!-- 진입 타이밍 분석 -->
+        <div class="sidebar-box">
+          <div class="sbox-header">🎯 진입 타이밍 분석</div>
+          <div class="entry-score-row">
+            <span class="entry-score-label">진입 점수</span>
+            <div class="entry-score-badge" id="entryScoreBadge">—</div>
+          </div>
+          <div class="entry-status" id="entryStatus"></div>
+          <div class="entry-metrics" id="entryMetrics"></div>
+        </div>
+
+        <!-- 주요 지표 -->
+        <div class="sidebar-box">
+          <div class="sbox-header">📈 주요 지표</div>
+          <div id="indicatorChips" class="chip-grid"></div>
+        </div>
+
       </div>
-      <div class="entry-status" id="entryStatus"></div>
-      <div class="entry-metrics" id="entryMetrics"></div>
+
     </div>
 
-    <!-- 주요 지표 -->
-    <div class="sidebar-box">
-      <div class="sbox-header">📈 주요 지표</div>
-      <div id="indicatorChips" class="chip-grid"></div>
-    </div>
-  </div>
-
-  <!-- 데이터 테이블 -->
-  <div class="table-wrap">
-    <div class="table-title">📋 최근 30일 데이터</div>
-    <div style="overflow-x:auto">
-      <table class="data-table">
-        <thead id="tableHead"></thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
   </div>
 
 </main>
