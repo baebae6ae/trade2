@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 from engine.data import fetch_market_index, resample_ohlcv
-from engine.universe import MARKET_MAP
+from engine.universe import get_market_stocks
 
 INDICES = {
     "KR": [
@@ -191,73 +191,80 @@ def get_market_map_data(region: str) -> dict:
 
 # ── 52주 신고가 (배치) ────────────────────────────────────
 
-def get_52week_highs(market_key: str) -> list:
-    stocks = MARKET_MAP.get(market_key.lower(), [])
-    if not stocks:
-        return []
-
-    all_tickers = [t for t, _ in stocks]
-    name_map    = {t: n for t, n in stocks}
-
-    # 2년치 주봉 데이터 배치 다운로드
-    try:
-        raw_daily = yf.download(
-            all_tickers, period="2y",
-            auto_adjust=True, progress=False,
-            group_by="ticker", threads=True,
-        )
-    except Exception:
-        return []
-
+def get_52week_highs(market_key: str, offset: int = 0, limit: int = 10) -> tuple[list, int]:
+    size = max(1, int(limit or 10))
+    cursor = max(0, int(offset or 0))
     results = []
-    for ticker in all_tickers:
-        name = name_map[ticker]
+
+    while len(results) < size:
+        stocks = get_market_stocks(market_key, offset=cursor, limit=size)
+        if not stocks:
+            break
+
+        all_tickers = [t for t, _ in stocks]
+        name_map = {t: n for t, n in stocks}
+
         try:
-            if len(all_tickers) == 1:
-                close_d = raw_daily["Close"].dropna()
-            else:
-                if ticker not in raw_daily.columns.get_level_values(0):
-                    continue
-                close_d = raw_daily[ticker]["Close"].dropna()
-            if len(close_d) < 20:
-                continue
-
-            close_w = close_d.resample("W-FRI").last().dropna()
-            if len(close_w) < 10:
-                continue
-
-            high52  = close_w.rolling(52, min_periods=10).max()
-            at_high = close_w >= high52 * 0.985
-            if not at_high.iloc[-1]:
-                continue
-
-            streak = 0
-            for val in reversed(at_high.values.tolist()):
-                if val:
-                    streak += 1
-                else:
-                    break
-
-            current = float(close_w.iloc[-1])
-            h52     = float(high52.iloc[-1])
-            gap_pct = round((current - h52) / h52 * 100, 2) if h52 else 0.0
-
-            # 당일 등락 (일봉 마지막 2개)
-            day_pct = 0.0
-            if len(close_d) >= 2:
-                day_pct = round((float(close_d.iloc[-1]) - float(close_d.iloc[-2])) / float(close_d.iloc[-2]) * 100, 2)
-
-            results.append({
-                "ticker":  ticker,
-                "name":    name,
-                "close":   round(current, 2),
-                "high52":  round(h52, 2),
-                "gap_pct": gap_pct,
-                "streak":  streak,
-                "day_pct": day_pct,
-            })
+            raw_daily = yf.download(
+                all_tickers, period="2y",
+                auto_adjust=True, progress=False,
+                group_by="ticker", threads=True,
+            )
         except Exception:
+            cursor += len(stocks)
             continue
 
+        for ticker in all_tickers:
+            name = name_map[ticker]
+            try:
+                if len(all_tickers) == 1:
+                    close_d = raw_daily["Close"].dropna()
+                else:
+                    if ticker not in raw_daily.columns.get_level_values(0):
+                        continue
+                    close_d = raw_daily[ticker]["Close"].dropna()
+                if len(close_d) < 20:
+                    continue
+
+                close_w = close_d.resample("W-FRI").last().dropna()
+                if len(close_w) < 10:
+                    continue
+
+                high52 = close_w.rolling(52, min_periods=10).max()
+                at_high = close_w >= high52 * 0.985
+                if not at_high.iloc[-1]:
+                    continue
+
+                streak = 0
+                for val in reversed(at_high.values.tolist()):
+                    if val:
+                        streak += 1
+                    else:
+                        break
+
+                current = float(close_w.iloc[-1])
+                h52 = float(high52.iloc[-1])
+                gap_pct = round((current - h52) / h52 * 100, 2) if h52 else 0.0
+
+                day_pct = 0.0
+                if len(close_d) >= 2:
+                    day_pct = round((float(close_d.iloc[-1]) - float(close_d.iloc[-2])) / float(close_d.iloc[-2]) * 100, 2)
+
+                results.append({
+                    "ticker": ticker,
+                    "name": name,
+                    "close": round(current, 2),
+                    "high52": round(h52, 2),
+                    "gap_pct": gap_pct,
+                    "streak": streak,
+                    "day_pct": day_pct,
+                })
+                if len(results) >= size:
+                    break
+            except Exception:
+                continue
+
+        cursor += len(stocks)
+
     results.sort(key=lambda x: x["streak"], reverse=True)
-    return results
+    return results[:size], cursor

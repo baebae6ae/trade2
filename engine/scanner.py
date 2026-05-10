@@ -4,7 +4,7 @@ import concurrent.futures
 import numpy as np
 from engine.data import fetch, calc_indicators
 from engine.fis  import calc_fis, make_judgment, calc_entry_score
-from engine.universe import MARKET_MAP
+from engine.universe import get_market_stocks
 
 
 def _analyze_one(ticker_name):
@@ -52,7 +52,18 @@ def _analyze_one(ticker_name):
         return {"ticker": ticker, "name": name, "ok": False, "error": str(e)}
 
 
-def scan_market(market: str) -> list:
+def _analyze_batch(stocks: list) -> list:
+    if not stocks:
+        return []
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+        for r in ex.map(_analyze_one, stocks):
+            if r.get("ok"):
+                results.append(r)
+    return results
+
+
+def scan_market(market: str, offset: int = 0, limit: int = 10) -> tuple[list, int]:
     """
     지정 시장 전체 스캔 -> 신규 진입 후보
 
@@ -62,23 +73,29 @@ def scan_market(market: str) -> list:
 
     정렬: entry_score 높은 순 (눌림 품질 우선)
     """
-    stocks = MARKET_MAP.get(market.lower(), [])
-    if not stocks:
-        return []
-    results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
-        for r in ex.map(_analyze_one, stocks):
-            if r["ok"]:
-                results.append(r)
-    candidates = [
-        r for r in results
-        if r["fis"] >= 30
-        and r["entry_score"] >= 55
-        and r["risk"] > -16
-        and r["trend"] > 0
-    ]
+    size = max(1, int(limit or 10))
+    cursor = max(0, int(offset or 0))
+    candidates = []
+
+    while len(candidates) < size:
+        batch = get_market_stocks(market, offset=cursor, limit=size)
+        if not batch:
+            break
+
+        results = _analyze_batch(batch)
+        filtered = [
+            r for r in results
+            if r["fis"] >= 30
+            and r["entry_score"] >= 55
+            and r["risk"] > -16
+            and r["trend"] > 0
+        ]
+        candidates.extend(filtered)
+        cursor += len(batch)
+
+    candidates = candidates[:size]
     candidates.sort(key=lambda x: x["entry_score"], reverse=True)
-    return candidates
+    return candidates, cursor
 
 
 # ── 쿠모 브레이크아웃 스캐너 ────────────────────────────────
@@ -189,23 +206,31 @@ def _kumo_check_one(ticker_name):
         return {"ticker": ticker, "name": name, "ok": False, "error": str(e)}
 
 
-def scan_kumo_breakout(market: str) -> list:
+def scan_kumo_breakout(market: str, offset: int = 0, limit: int = 10) -> tuple[list, int]:
     """
     쿠모 브레이크아웃 패턴 스캔 (주봉 기준)
       - 구름 아래 20주+ 체류 후 구름 돌파
       - 구름 반전(Kumo Twist) 동반
       - 일봉 거래량 폭발 + 장대양봉
     """
-    stocks = MARKET_MAP.get(market.lower(), [])
-    if not stocks:
-        return []
-    results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
-        for r in ex.map(_kumo_check_one, stocks):
-            if r.get("ok"):
-                results.append(r)
-    results.sort(key=lambda x: x.get("below_weeks", 0), reverse=True)
-    return results
+    size = max(1, int(limit or 10))
+    cursor = max(0, int(offset or 0))
+    collected = []
+
+    while len(collected) < size:
+        batch = get_market_stocks(market, offset=cursor, limit=size)
+        if not batch:
+            break
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+            for r in ex.map(_kumo_check_one, batch):
+                if r.get("ok"):
+                    collected.append(r)
+        cursor += len(batch)
+
+    collected = collected[:size]
+    collected.sort(key=lambda x: x.get("below_weeks", 0), reverse=True)
+    return collected, cursor
 
 
 

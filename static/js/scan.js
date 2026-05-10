@@ -15,6 +15,30 @@ function selectScanType(type) {
 let _market = "kospi";
 let _scanning = false;
 let _scanCandidates = [];
+let _scanOffset = 0;
+let _scanLimit = 10;
+let _scanHasMore = false;
+let _scanMoreLoading = false;
+
+function _scanApiUrl(offset) {
+  const base = _scanType === "kumo"
+    ? `/api/scan/kumo/${_market}`
+    : `/api/scan/${_market}`;
+  return `${base}?offset=${offset}&limit=${_scanLimit}`;
+}
+
+function _updateScanMoreButton() {
+  const wrap = document.getElementById("scanMoreWrap");
+  const btn = document.getElementById("scanMoreBtn");
+  if (!wrap || !btn) return;
+  if (_scanHasMore) {
+    wrap.style.display = "flex";
+    btn.disabled = false;
+    btn.textContent = "자세히 보기";
+  } else {
+    wrap.style.display = "none";
+  }
+}
 
 function selectMarket(market) {
   _market = market;
@@ -35,15 +59,20 @@ async function doScan() {
   const scanLabel = _scanType === "kumo" ? "쿠모 브레이크아웃" : "FIS 진입";
   document.getElementById("loadingMsg").textContent = `${label} ${scanLabel} 분석 중... (최대 30초 소요)`;
   document.getElementById("loadingOverlay").style.display = "flex";
+  _scanOffset = 0;
+  _scanHasMore = false;
+  _scanCandidates = [];
+  _updateScanMoreButton();
 
   try {
-    const apiUrl = _scanType === "kumo"
-      ? `/api/scan/kumo/${_market}`
-      : `/api/scan/${_market}`;
+    const apiUrl = _scanApiUrl(0);
     const data = await fetch(apiUrl).then(r => r.json());
     document.getElementById("loadingOverlay").style.display = "none";
     if (!data.ok) { showToast("스캔 오류: " + data.error, "error"); return; }
-    renderResults(data.candidates, label);
+    _scanOffset = data.next_offset || _scanLimit;
+    _scanHasMore = !!data.has_more;
+    renderResults(data.candidates || [], label, false);
+    _updateScanMoreButton();
   } catch(e) {
     document.getElementById("loadingOverlay").style.display = "none";
     showToast("네트워크 오류: " + e.message, "error");
@@ -54,18 +83,44 @@ async function doScan() {
   }
 }
 
-function renderResults(candidates, label) {
-  _scanCandidates = candidates;
+async function loadMoreScan() {
+  if (_scanMoreLoading || !_scanHasMore) return;
+  _scanMoreLoading = true;
+  const btn = document.getElementById("scanMoreBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "불러오는 중...";
+  }
+
+  try {
+    const data = await fetch(_scanApiUrl(_scanOffset)).then(r => r.json());
+    if (!data.ok) {
+      throw new Error(data.error || "scan more failed");
+    }
+    _scanOffset = data.next_offset || (_scanOffset + _scanLimit);
+    _scanHasMore = !!data.has_more;
+    const label = {kospi:"코스피", kosdaq:"코스닥", us:"미국"}[_market];
+    renderResults(data.candidates || [], label, true);
+  } catch (e) {
+    showToast("추가 로딩 오류: " + e.message, "error");
+  } finally {
+    _scanMoreLoading = false;
+    _updateScanMoreButton();
+  }
+}
+
+function renderResults(candidates, label, append = false) {
+  _scanCandidates = append ? _scanCandidates.concat(candidates) : candidates;
   const section = document.getElementById("resultsSection");
   const countEl = document.getElementById("resultCount");
   const gridEl  = document.getElementById("candidatesGrid");
-  countEl.textContent = candidates.length + "개";
+  countEl.textContent = _scanCandidates.length + "개";
   const resultDesc = _scanType === "kumo"
     ? `${label} 쿠모 브레이크아웃 패턴 종목 (구름 아래 체류기간 긴 순)`
     : `${label} 상승 우위 진입 후보 (진입 점수 높은 순)`;
   document.getElementById("resultLabel").textContent = resultDesc;
 
-  if (!candidates.length) {
+  if (!_scanCandidates.length) {
     gridEl.innerHTML = `
       <div class="no-result" style="grid-column:1/-1">
         <div class="nr-icon">🔍</div>
@@ -73,15 +128,17 @@ function renderResults(candidates, label) {
         <div style="margin-top:6px;font-size:12px;color:var(--text3)">시장 상황이 개선되면 다시 스캔해보세요.</div>
       </div>`;
     section.style.display = "block";
+    _updateScanMoreButton();
     return;
   }
 
   if (_scanType === "kumo") {
-    gridEl.innerHTML = candidates.map(c => renderKumoCard(c)).join("");
+    gridEl.innerHTML = _scanCandidates.map(c => renderKumoCard(c)).join("");
     section.style.display = "block";
+    _updateScanMoreButton();
     return;
   }
-  gridEl.innerHTML = candidates.map((c, idx) => {
+  gridEl.innerHTML = _scanCandidates.map((c, idx) => {
     const col    = fisColorGlobal(c.fis);
     const eScore = c.entry_score ?? 0;
     const eCol   = eScore >= 80 ? "#2ea043" : eScore >= 65 ? "#56d364" : eScore >= 50 ? "#d29922" : "#6e7681";
@@ -118,6 +175,7 @@ function renderResults(candidates, label) {
       </div>`;
   }).join("");
   section.style.display = "block";
+  _updateScanMoreButton();
 }
 
 function fisColorGlobal(fis) {

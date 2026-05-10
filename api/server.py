@@ -19,6 +19,7 @@ from engine.chart     import render_main_chart, render_mini_chart
 from engine.market    import get_market_summary, get_market_map_data, get_52week_highs
 from engine.scanner   import scan_market, scan_kumo_breakout
 from engine.portfolio import buy as port_buy, sell as port_sell, get_positions, update_trailing_stop
+from engine.universe  import get_market_total_count
 
 BASE_DIR   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -145,9 +146,22 @@ def api_market_map(region: str):
 
 @app.route("/api/market/52h/<market>")
 def api_52week_high(market: str):
+    if market.lower() not in ("kospi", "kosdaq", "us"):
+        return jsonify({"ok": False, "error": "market must be kospi|kosdaq|us"}), 400
     try:
-        data = get_52week_highs(market)
-        return jsonify({"ok": True, "data": data})
+        offset = max(0, int(request.args.get("offset", 0)))
+        limit = max(1, min(50, int(request.args.get("limit", 10))))
+        data, next_offset = get_52week_highs(market, offset=offset, limit=limit)
+        total_stocks = get_market_total_count(market)
+        return jsonify({
+            "ok": True,
+            "data": data,
+            "offset": offset,
+            "limit": limit,
+            "next_offset": next_offset,
+            "has_more": next_offset < total_stocks,
+            "total_stocks": total_stocks,
+        })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 # ── API: 검색 ─────────────────────────────────────────────
@@ -313,8 +327,20 @@ def api_scan(market: str):
     if market.lower() not in ("kospi", "kosdaq", "us"):
         return jsonify({"ok": False, "error": "market must be kospi|kosdaq|us"}), 400
     try:
-        candidates = scan_market(market)
-        return jsonify({"ok": True, "market": market, "candidates": candidates})
+        offset = max(0, int(request.args.get("offset", 0)))
+        limit = max(1, min(50, int(request.args.get("limit", 10))))
+        candidates, next_offset = scan_market(market, offset=offset, limit=limit)
+        total_stocks = get_market_total_count(market)
+        return jsonify({
+            "ok": True,
+            "market": market,
+            "candidates": candidates,
+            "offset": offset,
+            "limit": limit,
+            "next_offset": next_offset,
+            "has_more": next_offset < total_stocks,
+            "total_stocks": total_stocks,
+        })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e),
                         "trace": traceback.format_exc()}), 500
@@ -329,8 +355,20 @@ def api_scan_kumo(market: str):
     if market.lower() not in ("kospi", "kosdaq", "us"):
         return jsonify({"ok": False, "error": "market must be kospi|kosdaq|us"}), 400
     try:
-        candidates = scan_kumo_breakout(market)
-        return jsonify({"ok": True, "market": market, "candidates": candidates})
+        offset = max(0, int(request.args.get("offset", 0)))
+        limit = max(1, min(50, int(request.args.get("limit", 10))))
+        candidates, next_offset = scan_kumo_breakout(market, offset=offset, limit=limit)
+        total_stocks = get_market_total_count(market)
+        return jsonify({
+            "ok": True,
+            "market": market,
+            "candidates": candidates,
+            "offset": offset,
+            "limit": limit,
+            "next_offset": next_offset,
+            "has_more": next_offset < total_stocks,
+            "total_stocks": total_stocks,
+        })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e),
                         "trace": traceback.format_exc()}), 500

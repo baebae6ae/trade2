@@ -862,6 +862,38 @@
   color: var(--newsprint-red);
 }
 
+.more-wrap {
+  margin-top: var(--space-xl);
+  display: flex;
+  justify-content: center;
+}
+
+.more-btn {
+  min-width: 140px;
+  height: 40px;
+  padding: 0 var(--space-lg);
+  border: var(--border);
+  background: var(--newsprint-bg);
+  color: var(--newsprint-ink);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.more-btn:hover {
+  background: var(--newsprint-ink);
+  color: var(--newsprint-bg);
+}
+
+.more-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ── Mobile Responsive ────────────────────────– */
 @media (max-width: 767px) {
   .ms-head {

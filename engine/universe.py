@@ -1,76 +1,22 @@
-"""engine/universe.py — KRX/US 종목 풀 (정확성 우선)
+"""engine/universe.py — KRX/US 종목 유니버스
 
-Strategy:
-  1. 확실한 하드코딩: KOSPI/KOSDAQ Top 45 (100% 정확도)
-  2. 검색 시 나머지: yfinance 동적 로드 (검색 완벽성 보장)
-  3. 결과: 정확성 + 검색 완벽성 동시 달성
+KRX(KOSPI/KOSDAQ)는 FinanceDataReader에서 자동 로드해
+오타/누락 없는 전체 시장 분석 기반을 제공한다.
 """
 
-import os
 import json
-import yfinance as yf
+import os
 from typing import Dict, List, Tuple
 
-# ═════════════════════════════════════════════════════════════
-# 1. VERIFIED HARDCODED STOCKS (100% 정확도 보증)
-# ═════════════════════════════════════════════════════════════
-# 주의: 이곳에는 알려진 대형주/자주 검색되는 종목만 포함
-# 불확실한 것들은 검색 시 yfinance 동적로드로 처리
+import yfinance as yf
 
-HARDCODED_KOSPI = {
-    # Top 30 KOSPI (시가총액 기준)
-    "005930.KS": "삼성전자",
-    "000660.KS": "SK하이닉스", 
-    "005380.KS": "현대차",
-    "003670.KS": "포스코퓨처엠",
-    "005490.KS": "POSCO홀딩스",
-    "035420.KS": "NAVER",
-    "000270.KS": "기아",
-    "051910.KS": "LG화학",
-    "006400.KS": "삼성SDI",
-    "028260.KS": "삼성물산",
-    "012330.KS": "현대모비스",
-    "207940.KS": "삼성바이오로직스",
-    "032830.KS": "삼성생명",
-    "035720.KS": "카카오",
-    "055550.KS": "신한지주",
-    "017670.KS": "SK텔레콤",
-    "015760.KS": "한국전력",
-    "066570.KS": "LG전자",
-    "096770.KS": "SK이노베이션",
-    "003550.KS": "LG",
-    "009150.KS": "삼성전기",
-    "000810.KS": "삼성화재",
-    "086790.KS": "하나금융지주",
-    "024110.KS": "기업은행",
-    "033780.KS": "KT&G",
-    "003490.KS": "대한항공",
-    "010950.KS": "S-Oil",
-    "316140.KS": "우리금융지주",
-    "018260.KS": "삼성에스디에스",
-    "011200.KS": "HMM",
-    "034220.KS": "LG디스플레이",
-}
+try:
+    import FinanceDataReader as fdr
+except Exception:
+    fdr = None
 
-HARDCODED_KOSDAQ = {
-    # KOSDAQ Top 15
-    "022100.KS": "포스코DX",
-    "247540.KQ": "에코프로비엠",
-    "086520.KQ": "에코프로",
-    "357780.KQ": "솔브레인",
-    "145020.KQ": "휴젤",
-    "066970.KS": "엘앤에프",
-    "263750.KQ": "펄어비스",
-    "041510.KQ": "에스엠",
-    "302440.KS": "SK바이오사이언스",
-    "293490.KQ": "카카오게임즈",
-    "196170.KQ": "알테오젠",
-    "251270.KS": "넷마블",
-    "035900.KQ": "JYP Ent.",
-    "039030.KQ": "이오테크닉스",
-}
 
-HARDCODED_US = {
+US_BASE = {
     "AAPL": "Apple",
     "MSFT": "Microsoft",
     "NVDA": "NVIDIA",
@@ -103,49 +49,176 @@ HARDCODED_US = {
     "MRK": "Merck",
 }
 
-# ═════════════════════════════════════════════════════════════
-# 2. DYNAMIC LOADING (yfinance에서 영문명 가져오기)
-# ═════════════════════════════════════════════════════════════
+FALLBACK_KOSPI = {
+    "005930.KS": "삼성전자",
+    "000660.KS": "SK하이닉스",
+    "005380.KS": "현대차",
+    "000270.KS": "기아",
+    "051910.KS": "LG화학",
+    "006400.KS": "삼성SDI",
+    "012330.KS": "현대모비스",
+    "207940.KS": "삼성바이오로직스",
+    "035420.KS": "NAVER",
+    "035720.KS": "카카오",
+}
+
+FALLBACK_KOSDAQ = {
+    "247540.KQ": "에코프로비엠",
+    "086520.KQ": "에코프로",
+    "263750.KQ": "펄어비스",
+    "293490.KQ": "카카오게임즈",
+    "196170.KQ": "알테오젠",
+}
+
+
+def _cache_path() -> str:
+    return os.path.join(os.path.dirname(__file__), "_krx_universe_cache.json")
+
+
+def _load_krx_from_cache() -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
+    path = _cache_path()
+    if not os.path.exists(path):
+        return [], []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+        kospi = [(s, n) for s, n in payload.get("kospi", []) if s and n]
+        kosdaq = [(s, n) for s, n in payload.get("kosdaq", []) if s and n]
+        return kospi, kosdaq
+    except Exception:
+        return [], []
+
+
+def _save_krx_cache(kospi: List[Tuple[str, str]], kosdaq: List[Tuple[str, str]]) -> None:
+    path = _cache_path()
+    payload = {"kospi": kospi, "kosdaq": kosdaq}
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def _normalize_code(value: str) -> str:
+    text = str(value or "").strip()
+    if not text.isdigit():
+        return ""
+    return text.zfill(6)
+
+
+def _to_float(value) -> float:
+    try:
+        if value is None:
+            return 0.0
+        text = str(value).replace(",", "").strip()
+        if not text:
+            return 0.0
+        return float(text)
+    except Exception:
+        return 0.0
+
+
+def _build_krx_universe_from_fdr() -> Tuple[
+    List[Tuple[str, str]],
+    List[Tuple[str, str]],
+    List[Tuple[str, str]],
+    List[Tuple[str, str]],
+]:
+    if fdr is None:
+        raise RuntimeError("FinanceDataReader is not available")
+
+    listing = fdr.StockListing("KRX")
+    if listing is None or listing.empty:
+        raise RuntimeError("KRX listing is empty")
+
+    cols = ["Code", "Name", "Market"]
+    if "Marcap" in listing.columns:
+        cols.append("Marcap")
+    rows = listing[cols].dropna(subset=["Code", "Name", "Market"])
+
+    kospi_map: Dict[str, str] = {}
+    kosdaq_map: Dict[str, str] = {}
+    kospi_caps: Dict[str, float] = {}
+    kosdaq_caps: Dict[str, float] = {}
+
+    for _, row in rows.iterrows():
+        code = _normalize_code(row["Code"])
+        name = str(row["Name"] or "").strip()
+        market = str(row["Market"] or "").strip().upper()
+        if not code or not name:
+            continue
+
+        marcap = _to_float(row.get("Marcap") if hasattr(row, "get") else None)
+
+        if market.startswith("KOSPI"):
+            symbol = f"{code}.KS"
+            kospi_map[symbol] = name
+            kospi_caps[symbol] = marcap
+        elif market.startswith("KOSDAQ"):
+            symbol = f"{code}.KQ"
+            kosdaq_map[symbol] = name
+            kosdaq_caps[symbol] = marcap
+
+    kospi = sorted(kospi_map.items(), key=lambda x: x[0])
+    kosdaq = sorted(kosdaq_map.items(), key=lambda x: x[0])
+    if not kospi and not kosdaq:
+        raise RuntimeError("No KOSPI/KOSDAQ symbols found from FDR")
+
+    kospi_ranked = sorted(
+        [(symbol, kospi_map[symbol]) for symbol in kospi_map],
+        key=lambda x: (-kospi_caps.get(x[0], 0.0), x[0]),
+    )
+    kosdaq_ranked = sorted(
+        [(symbol, kosdaq_map[symbol]) for symbol in kosdaq_map],
+        key=lambda x: (-kosdaq_caps.get(x[0], 0.0), x[0]),
+    )
+    return kospi, kosdaq, kospi_ranked, kosdaq_ranked
+
+
+def _load_krx_universe() -> Tuple[
+    List[Tuple[str, str]],
+    List[Tuple[str, str]],
+    List[Tuple[str, str]],
+    List[Tuple[str, str]],
+    str,
+]:
+    try:
+        kospi, kosdaq, kospi_ranked, kosdaq_ranked = _build_krx_universe_from_fdr()
+        _save_krx_cache(kospi, kosdaq)
+        return kospi, kosdaq, kospi_ranked, kosdaq_ranked, "fdr"
+    except Exception:
+        cached_kospi, cached_kosdaq = _load_krx_from_cache()
+        if cached_kospi or cached_kosdaq:
+            return cached_kospi, cached_kosdaq, cached_kospi, cached_kosdaq, "cache"
+        fb_kospi = sorted(FALLBACK_KOSPI.items(), key=lambda x: x[0])
+        fb_kosdaq = sorted(FALLBACK_KOSDAQ.items(), key=lambda x: x[0])
+        return (
+            fb_kospi,
+            fb_kosdaq,
+            fb_kospi,
+            fb_kosdaq,
+            "fallback",
+        )
+
 
 def _get_display_name(ticker: str) -> str:
-    """yfinance 또는 기본값에서 종목 이름 가져오기"""
     try:
         info = yf.Ticker(ticker).info
         return info.get("longName") or info.get("shortName") or ticker
-    except:
+    except Exception:
         return ticker
 
-def _build_dynamic_list(tickers: List[str]) -> Dict[str, str]:
-    """동적으로 종목 이름 로드"""
-    result = {}
-    for ticker in tickers:
-        name = _get_display_name(ticker)
-        result[ticker] = name
-        print(f"  ✓ {ticker}: {name}")
-    return result
 
-# 다른 KRX 종목들 (필요시 동적으로 추가)
-OTHER_KOSPI_TICKERS = [
-    # TODO: 추가 KOSPI 종목들
-]
+KOSPI, KOSDAQ, KOSPI_CAP_RANKED, KOSDAQ_CAP_RANKED, KRX_SOURCE = _load_krx_universe()
+US = sorted(US_BASE.items(), key=lambda x: x[0])
 
-OTHER_KOSDAQ_TICKERS = [
-    # TODO: 추가 KOSDAQ 종목들
-]
-
-# ═════════════════════════════════════════════════════════════
-# 3. BUILD COMBINED LISTS
-# ═════════════════════════════════════════════════════════════
-
-# 하드코딩된 리스트를 튜플 형태로 변환
-KOSPI = [(ticker, name) for ticker, name in HARDCODED_KOSPI.items()]
-KOSDAQ = [(ticker, name) for ticker, name in HARDCODED_KOSDAQ.items()]
-US = [(ticker, name) for ticker, name in HARDCODED_US.items()]
-
-# 통합 리스트
 ALL_STOCKS = KOSPI + KOSDAQ + US
 NAME_MAP = {ticker: name for ticker, name in ALL_STOCKS}
-TICKER_MAP = {ticker.upper(): ticker for ticker, _ in ALL_STOCKS}  # 대소문자 무관 매칭용
+TICKER_MAP = {ticker.upper(): ticker for ticker, _ in ALL_STOCKS}
+KRX_CODE_MAP = {
+    ticker.split(".")[0]: ticker
+    for ticker, _ in (KOSPI + KOSDAQ)
+}
 
 MARKET_MAP = {
     "kospi": KOSPI,
@@ -153,38 +226,70 @@ MARKET_MAP = {
     "us": US,
 }
 
-# ═════════════════════════════════════════════════════════════
-# 4. SEARCH-TIME FALLBACK (검색 시 yfinance 동적 로드)
-# ═════════════════════════════════════════════════════════════
+MARKET_CAP_RANK_MAP = {
+    "kospi": KOSPI_CAP_RANKED,
+    "kosdaq": KOSDAQ_CAP_RANKED,
+    "us": US,
+}
 
-_CACHE = {}  # 런타임 캐시
+_CACHE: Dict[str, Tuple[str, str]] = {}
+
 
 def get_or_fetch_stock_info(ticker: str) -> Tuple[str, str]:
-    """
-    주어진 ticker에 대해 symbol, name 반환
-    - 이미 로드된 것: 반환
-    - ALL_STOCKS에 있음: 반환
-    - 없음: yfinance에서 동적 로드 후 캐시
-    """
-    ticker_upper = ticker.upper()
-    
-    # 이미 ALL_STOCKS에 있는지 확인
-    for symbol, name in ALL_STOCKS:
-        if symbol.upper() == ticker_upper:
-            return symbol, name
-    
-    # 캐시에 있는지 확인
+    """주어진 ticker에 대해 (symbol, name) 반환."""
+    raw = (ticker or "").strip()
+    if not raw:
+        return "", ""
+
+    ticker_upper = raw.upper()
+
+    canonical = TICKER_MAP.get(ticker_upper)
+    if canonical:
+        return canonical, NAME_MAP.get(canonical, canonical)
+
+    if ticker_upper.isdigit() and len(ticker_upper) == 6:
+        krx_symbol = KRX_CODE_MAP.get(ticker_upper)
+        if krx_symbol:
+            return krx_symbol, NAME_MAP.get(krx_symbol, krx_symbol)
+
     if ticker_upper in _CACHE:
         return _CACHE[ticker_upper]
-    
-    # yfinance에서 동적 로드
-    try:
-        info = yf.Ticker(ticker).info
-        name = info.get("longName") or info.get("shortName") or ticker
-        _CACHE[ticker_upper] = (ticker_upper, name)
-        return ticker_upper, name
-    except:
-        _CACHE[ticker_upper] = (ticker_upper, ticker)
-        return ticker_upper, ticker
 
-print(f"✅ Universe loaded: KOSPI={len(KOSPI)}, KOSDAQ={len(KOSDAQ)}, US={len(US)}, Total={len(ALL_STOCKS)}")
+    try:
+        info = yf.Ticker(raw).info
+        name = info.get("longName") or info.get("shortName") or raw
+        payload = (ticker_upper, name)
+        _CACHE[ticker_upper] = payload
+        return payload
+    except Exception:
+        payload = (ticker_upper, raw)
+        _CACHE[ticker_upper] = payload
+        return payload
+
+
+def get_market_stocks(market: str, offset: int = 0, limit: int | None = None) -> List[Tuple[str, str]]:
+    """시장별 종목을 시총 순(가능 시)으로 반환하고 offset/limit를 적용한다."""
+    market_key = (market or "").strip().lower()
+    stocks = MARKET_CAP_RANK_MAP.get(market_key, MARKET_MAP.get(market_key, []))
+    if not stocks:
+        return []
+
+    start = max(0, int(offset or 0))
+    if limit is None:
+        return stocks[start:]
+
+    size = max(1, int(limit))
+    end = start + size
+    return stocks[start:end]
+
+
+def get_market_total_count(market: str) -> int:
+    market_key = (market or "").strip().lower()
+    stocks = MARKET_CAP_RANK_MAP.get(market_key, MARKET_MAP.get(market_key, []))
+    return len(stocks)
+
+
+print(
+    f"✅ Universe loaded ({KRX_SOURCE}): "
+    f"KOSPI={len(KOSPI)}, KOSDAQ={len(KOSDAQ)}, US={len(US)}, Total={len(ALL_STOCKS)}"
+)

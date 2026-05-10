@@ -138,22 +138,94 @@ function _switchMapMode(region, mode, btn) {
 }
 
 // ── 52주 신고가 ───────────────────────────────────────
+const _h52State = {
+  market: "kospi",
+  offset: 0,
+  limit: 10,
+  hasMore: false,
+  loading: false,
+  items: [],
+};
+
+function _update52hMoreButton() {
+  const wrap = document.getElementById("high52MoreWrap");
+  const btn = document.getElementById("high52MoreBtn");
+  if (!wrap || !btn) return;
+  if (_h52State.hasMore) {
+    wrap.style.display = "flex";
+    btn.disabled = false;
+    btn.textContent = "자세히 보기";
+  } else {
+    wrap.style.display = "none";
+  }
+}
+
 async function load52h(market, btn) {
   document.querySelectorAll(".h52-tab").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
 
+  _h52State.market = market;
+  _h52State.offset = 0;
+  _h52State.items = [];
+  _h52State.hasMore = false;
+
   const grid = document.getElementById("high52Grid");
   grid.innerHTML = '<div class="high52-loading">조회 중…</div>';
+  _update52hMoreButton();
 
   try {
-    const data = await fetch(`/api/market/52h/${market}`).then(r => r.json());
-    if (!data.ok || !data.data.length) {
-      grid.innerHTML = '<div class="high52-empty">해당 시장에서 52주 신고가 종목이 없습니다.</div>';
+    const data = await fetch(`/api/market/52h/${market}?offset=0&limit=${_h52State.limit}`).then(r => r.json());
+    if (!data.ok) {
+      grid.innerHTML = '<div class="high52-empty">오류가 발생했습니다.</div>';
       return;
     }
-    render52hGrid(grid, data.data);
+
+    _h52State.items = data.data || [];
+    _h52State.offset = data.next_offset || _h52State.limit;
+    _h52State.hasMore = !!data.has_more;
+
+    if (!_h52State.items.length) {
+      grid.innerHTML = '<div class="high52-empty">해당 시장에서 52주 신고가 종목이 없습니다.</div>';
+      _update52hMoreButton();
+      return;
+    }
+
+    render52hGrid(grid, _h52State.items);
+    _update52hMoreButton();
   } catch(e) {
     grid.innerHTML = '<div class="high52-empty">오류가 발생했습니다.</div>';
+    _update52hMoreButton();
+  }
+}
+
+async function loadMore52h() {
+  if (_h52State.loading || !_h52State.hasMore) return;
+  _h52State.loading = true;
+  const btn = document.getElementById("high52MoreBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "불러오는 중...";
+  }
+
+  try {
+    const url = `/api/market/52h/${_h52State.market}?offset=${_h52State.offset}&limit=${_h52State.limit}`;
+    const data = await fetch(url).then(r => r.json());
+    if (!data.ok) {
+      throw new Error(data.error || "load failed");
+    }
+
+    const nextItems = data.data || [];
+    _h52State.items = _h52State.items.concat(nextItems);
+    _h52State.offset = data.next_offset || (_h52State.offset + _h52State.limit);
+    _h52State.hasMore = !!data.has_more;
+
+    const grid = document.getElementById("high52Grid");
+    render52hGrid(grid, _h52State.items);
+  } catch (e) {
+    console.error("loadMore52h error", e);
+  } finally {
+    _h52State.loading = false;
+    _update52hMoreButton();
   }
 }
 
