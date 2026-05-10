@@ -187,4 +187,4 @@ def get_or_fetch_stock_info(ticker: str) -> Tuple[str, str]:
         _CACHE[ticker_upper] = (ticker_upper, ticker)
         return ticker_upper, ticker
 
-print(f"[OK] Universe loaded: KOSPI={len(KOSPI)}, KOSDAQ={len(KOSDAQ)}, US={len(US)}, Total={len(ALL_STOCKS)}")
+print(f"✅ Universe loaded: KOSPI={len(KOSPI)}, KOSDAQ={len(KOSDAQ)}, US={len(US)}, Total={len(ALL_STOCKS)}")

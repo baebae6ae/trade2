@@ -57,6 +57,22 @@
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+}
+
+.action-left,
+.action-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chart-controls-title {
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .action-btn {
@@ -96,52 +112,13 @@
   color: #fff;
 }
 
-/* ── 2-Column Body → Single Column ───────────────────────────── */
+/* ── 2-Column Body ───────────────────────────── */
 .analyze-body {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 360px;
   align-items: start;
   border-bottom: 1px solid var(--border);
-}
-
-.chart-main-col {
-  display: flex;
-  flex-direction: column;
-  background: var(--newsprint-bg);
-  overflow: hidden;
-}
-
-/* ── Chart Control Bar (드롭다운 위치 이동) ───────────────────────────── */
-.chart-control-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 28px;
-  background: var(--newsprint-bg);
-  border-bottom: 1px solid var(--border);
-  justify-content: flex-end;
-}
-
-.chart-control-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text1);
-  white-space: nowrap;
-}
-
-.period-select-inline {
-  padding: 6px 10px;
-  border: 1px solid var(--newsprint-grey);
-  background: var(--newsprint-bg);
-  color: var(--text1);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 0px;
-}
-
-.period-select-inline:hover {
-  background: var(--bg3);
+  min-height: calc(100vh - 200px);
 }
 
 .chart-col {
@@ -152,9 +129,18 @@
 .chart-stage {
   position: relative;
   width: 100%;
-  flex: 1;
-  transform-origin: top left;
   overflow: hidden;
+  background: var(--newsprint-bg);
+}
+.chart-viewport {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+.chart-transform {
+  position: relative;
+  width: 100%;
+  transform-origin: 0 0;
 }
 .main-chart {
   width: 100%;
@@ -165,6 +151,11 @@
   position: absolute;
   inset: 0;
   z-index: 2;
+  touch-action: none;
+  cursor: crosshair;
+}
+.chart-overlay.is-pan {
+  cursor: grabbing;
 }
 .chart-event-layer {
   position: absolute;
@@ -187,56 +178,10 @@
 .chart-event-badge.active {
   box-shadow: 0 0 0 2px rgba(17,17,17,0.25), 0 2px 8px rgba(0,0,0,0.14);
 }
-
-/* ── Overlay Lines (평단가, 추적손절) ───────────────────────────── */
-.chart-overlay-line {
-  position: absolute;
-  pointer-events: none;
-  z-index: 3;
-}
-
-.avg-price-line {
-  height: 2px;
-  background: linear-gradient(90deg, transparent 0%, #0066cc 50%, transparent 100%);
-  border-top: 1px dashed #0066cc;
-}
-
-.avg-price-line::before {
-  content: "평단가";
-  position: absolute;
-  top: -18px;
-  left: 2px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #0066cc;
-  white-space: nowrap;
-  background: rgba(249, 249, 247, 0.9);
-  padding: 2px 4px;
-}
-
-.trailing-stop-line {
-  height: 2px;
-  background: linear-gradient(90deg, transparent 0%, #d32f2f 50%, transparent 100%);
-  border-top: 1px dashed #d32f2f;
-}
-
-.trailing-stop-line::before {
-  content: "추적손절";
-  position: absolute;
-  top: -18px;
-  right: 2px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #d32f2f;
-  white-space: nowrap;
-  background: rgba(249, 249, 247, 0.9);
-  padding: 2px 4px;
-}
-
 .chart-crosshair {
   position: absolute;
   pointer-events: none;
-  z-index: 4;
+  z-index: 3;
 }
 .chart-crosshair-x {
   width: 1px;
@@ -248,7 +193,7 @@
 }
 .chart-axis-label {
   position: absolute;
-  z-index: 5;
+  z-index: 4;
   pointer-events: none;
   background: rgba(17, 17, 17, 0.88);
   color: #f9f9f7;
@@ -266,7 +211,7 @@
 }
 .chart-hover-tooltip {
   position: absolute;
-  z-index: 6;
+  z-index: 5;
   min-width: 180px;
   max-width: 240px;
   background: rgba(249, 249, 247, 0.98);
@@ -292,20 +237,11 @@
   color: var(--text1);
 }
 
-/* ── Sidebar Below ───────────────────────────── */
-.sidebar-below {
-  display: flex;
-  flex-direction: column;
-  background: var(--newsprint-bg);
-  width: 100%;
-}
-
 .sidebar-col {
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
   background: var(--newsprint-bg);
-  overflow-y: auto;
-  max-height: calc(100vh - 160px);
+  overflow: visible;
+  max-height: none;
 }
 
 /* ── Sidebar Box ─────────────────────────────── */
@@ -874,6 +810,78 @@
   .chart-col { border-right: none; border-bottom: 1px solid var(--border); }
   .sidebar-col { max-height: none; }
   .chip-grid { grid-template-columns: repeat(3, 1fr); }
+
+  .stock-header { padding: 12px 14px; gap: 10px; }
+  .sh-name { font-size: 1.18rem; }
+  .sh-meta { font-size: 11px; gap: 6px; }
+  .sh-price-row { margin-top: 5px; gap: 8px; }
+  .sh-price { font-size: 22px; }
+  .sh-currency { font-size: 12px; }
+  .sh-daychg { font-size: 11px; padding: 2px 8px; }
+
+  .fis-badge { font-size: 11px; padding: 5px 8px; }
+  .label-chip { font-size: 10px; padding: 3px 8px; }
+  .holding-badge { font-size: 10px; padding: 2px 8px; }
+
+  .action-bar { padding: 10px 12px; }
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .action-left,
+  .action-right {
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .action-btn {
+    min-height: 34px;
+    font-size: 11px;
+    padding: 6px 9px;
+    gap: 4px;
+  }
+
+  .period-select,
+  .back-btn {
+    min-height: 34px;
+    font-size: 11px;
+    padding: 5px 9px;
+  }
+
+  .chart-controls-title {
+    font-size: 11px;
+  }
+
+  .sbox-header {
+    font-size: 0.92rem;
+    padding: 9px 12px;
+  }
+  .sbox-body,
+  .entry-score-row,
+  .entry-status,
+  .entry-metrics,
+  .score-bars,
+  .chip-grid {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .entry-score-badge { font-size: 14px; padding: 4px 10px; }
+  .entry-score-label { font-size: 12px; }
+  .entry-status { font-size: 11px; }
+  .chip-label { font-size: 9px; }
+  .chip-value { font-size: 13px; }
+  .chip-sub { font-size: 10px; }
+
+  .table-wrap { padding: 14px 12px 28px; }
+  .data-table { font-size: 11.5px; }
+  .data-table th { font-size: 10px; padding: 7px 8px; }
+  .data-table td { padding: 7px 8px; }
+
+  .chart-controls-title {
+    width: 100%;
+    margin-bottom: 2px;
+  }
 
   .mbuy-qty-row,
   .mbuy-price-row {

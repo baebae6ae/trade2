@@ -16,6 +16,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
+import matplotlib.transforms as mtransforms
 from matplotlib.patches import FancyBboxPatch
 
 def _setup_korean_font():
@@ -172,16 +173,6 @@ def _build_chart_events(df: pd.DataFrame) -> tuple[pd.Series | None, list[dict],
             "date": df.index[idx].strftime("%Y-%m-%d"),
             "color": "#FF6F00",
         })
-    if trailing_stop is not None and len(df):
-        events.append({
-            "type": "trailing_stop",
-            "label": "추적손절",
-            "panel": "price",
-            "idx": len(df) - 1,
-            "value": float(trailing_stop.iloc[-1]),
-            "date": df.index[-1].strftime("%Y-%m-%d"),
-            "color": "#6D4C41",
-        })
     for idx in _recent_true_indices(cross_up, limit=2, lookback=120):
         events.append({
             "type": "macd_golden",
@@ -232,9 +223,24 @@ def _event_meta(fig, ax, event: dict) -> dict:
     return payload
 
 
+def _draw_right_price_tag(ax, y: float, text: str, color: str) -> None:
+    """가격 축 우측 끝에 수평선 라벨 표시."""
+    trans = mtransforms.blended_transform_factory(ax.transAxes, ax.transData)
+    ax.text(
+        0.995, y, text,
+        transform=trans,
+        ha="right", va="center",
+        fontsize=8.2, fontweight="bold", color="#FFFFFF",
+        bbox=dict(facecolor=color, edgecolor=color, boxstyle="round,pad=0.18", alpha=0.94),
+        zorder=8,
+        clip_on=False,
+    )
+
+
 def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
                       ticker: str, display_bars: int = 220,
-                      timeframe: str = "daily", include_meta: bool = False):
+                      timeframe: str = "daily", include_meta: bool = False,
+                      holding_lines: dict | None = None):
     """
     캔들 + 이동평균 + 볼린저 + 일목균형표 + 거래량 + MACD + RSI + FIS
     → base64 PNG 문자열 반환
@@ -262,7 +268,7 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
         4, 1,
         height_ratios=[5, 1, 1, 1],
         hspace=0.04,
-        left=0.045, right=0.985,
+        left=0.045, right=0.95,
         top=0.96, bottom=0.05
     )
     ax_c = fig.add_subplot(gs[0])
@@ -336,10 +342,20 @@ def render_main_chart(df_fis: pd.DataFrame, judgment: dict,
         ax_c.plot(xs, trailing_stop.values, color="#6D4C41", lw=0.9,
                   ls=":", alpha=0.9, label="추적손절", zorder=3)
 
+    if holding_lines:
+        avg_price = float(holding_lines.get("avg_price") or 0)
+        hold_ts = float(holding_lines.get("trailing_stop") or 0)
+        if avg_price > 0:
+            ax_c.axhline(avg_price, color="#1976D2", lw=1.1, ls="-.", alpha=0.95, zorder=5, label="평단가")
+            _draw_right_price_tag(ax_c, avg_price, f"평단 {avg_price:,.0f}", "#1976D2")
+        if hold_ts > 0:
+            ax_c.axhline(hold_ts, color="#8D6E63", lw=1.2, ls="--", alpha=0.95, zorder=5, label="보유 추적손절")
+            _draw_right_price_tag(ax_c, hold_ts, f"TS {hold_ts:,.0f}", "#8D6E63")
+
     _annotate_price_events(ax_c, df, _recent_true_indices(breakout_mask, limit=3, lookback=120), "돌파", BULL, above=True)
     _annotate_price_events(ax_c, df, _recent_true_indices(ema_reclaim_mask & ~breakout_mask.fillna(False), limit=2, lookback=90), "EMA20 회복", "#FF6F00", above=False)
 
-    ax_c.set_xlim(-1, n + 1)
+    ax_c.set_xlim(-1, n + 2)
     ax_c.legend(loc="upper left", fontsize=6.5,
                 facecolor=BG2, edgecolor=GRID,
                 labelcolor="#222222", ncol=8, framealpha=0.9)

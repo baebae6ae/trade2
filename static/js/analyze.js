@@ -10,18 +10,22 @@ const COL_LABELS = {
 let _chartMeta = null;
 let _chartOverlayBound = false;
 let _chartPinned = null;
-
-// 줌/드래그 상태
-let _chartZoom = 1.0;
-let _chartOffsetX = 0;
-let _chartOffsetY = 0;
-let _isDragging = false;
-let _dragStartX = 0;
-let _dragStartY = 0;
-let _lastTouchDistance = 0;
+const _chartView = {
+  scale: 1,
+  tx: 0,
+  ty: 0,
+  dragging: false,
+  dragX: 0,
+  dragY: 0,
+  touchMode: null,
+  pinchDist: 0,
+};
 
 function _chartEls() {
   return {
+    stage: document.getElementById("chartStage"),
+    viewport: document.getElementById("chartViewport"),
+    transform: document.getElementById("chartTransform"),
     overlay: document.getElementById("chartOverlay"),
     eventLayer: document.getElementById("chartEventLayer"),
     crossX: document.getElementById("chartCrosshairX"),
@@ -29,8 +33,6 @@ function _chartEls() {
     xLabel: document.getElementById("chartXAxisLabel"),
     yLabel: document.getElementById("chartYAxisLabel"),
     tooltip: document.getElementById("chartHoverTooltip"),
-    avglLine: document.getElementById("avglPriceLine"),
-    trailingLine: document.getElementById("trailingStopLine"),
   };
 }
 
@@ -40,6 +42,75 @@ function _clamp(value, min, max) {
 
 function _pct(value) {
   return `${(value * 100).toFixed(4)}%`;
+}
+
+function _viewportSize() {
+  const { viewport } = _chartEls();
+  if (!viewport) return { width: 1, height: 1 };
+  return {
+    width: Math.max(1, viewport.clientWidth || 1),
+    height: Math.max(1, viewport.clientHeight || 1),
+  };
+}
+
+function _clampPan(tx, ty, scale) {
+  const size = _viewportSize();
+  const maxX = Math.max(0, (scale - 1) * size.width);
+  const maxY = Math.max(0, (scale - 1) * size.height);
+  return {
+    tx: _clamp(tx, -maxX, 0),
+    ty: _clamp(ty, -maxY, 0),
+  };
+}
+
+function _applyChartTransform() {
+  const { transform } = _chartEls();
+  if (!transform) return;
+  const p = _clampPan(_chartView.tx, _chartView.ty, _chartView.scale);
+  _chartView.tx = p.tx;
+  _chartView.ty = p.ty;
+  transform.style.transform = `translate(${_chartView.tx}px, ${_chartView.ty}px) scale(${_chartView.scale})`;
+}
+
+function _resetChartTransform() {
+  _chartView.scale = 1;
+  _chartView.tx = 0;
+  _chartView.ty = 0;
+  _chartView.dragging = false;
+  _chartView.touchMode = null;
+  _applyChartTransform();
+}
+
+function _zoomAt(clientX, clientY, factor) {
+  const { viewport } = _chartEls();
+  if (!viewport) return;
+  const rect = viewport.getBoundingClientRect();
+  const localX = clientX - rect.left;
+  const localY = clientY - rect.top;
+  const prevScale = _chartView.scale;
+  const nextScale = _clamp(prevScale * factor, 1, 4.5);
+  if (Math.abs(nextScale - prevScale) < 0.0001) return;
+
+  const worldX = (localX - _chartView.tx) / prevScale;
+  const worldY = (localY - _chartView.ty) / prevScale;
+
+  _chartView.scale = nextScale;
+  _chartView.tx = localX - worldX * nextScale;
+  _chartView.ty = localY - worldY * nextScale;
+  _applyChartTransform();
+}
+
+function _touchDistance(t0, t1) {
+  const dx = t0.clientX - t1.clientX;
+  const dy = t0.clientY - t1.clientY;
+  return Math.hypot(dx, dy);
+}
+
+function _touchMidpoint(t0, t1) {
+  return {
+    x: (t0.clientX + t1.clientX) / 2,
+    y: (t0.clientY + t1.clientY) / 2,
+  };
 }
 
 function _chartValueText(panelKey, value) {
@@ -77,6 +148,59 @@ function _showChartTooltip(html, clientX, clientY) {
 function _hideChartCrosshair() {
   const { crossX, crossY, xLabel, yLabel } = _chartEls();
   [crossX, crossY, xLabel, yLabel].forEach(el => el?.classList.add("hidden"));
+}
+
+function _updateCrosshairAtClient(clientX, clientY) {
+  if (!_chartMeta) return;
+  const { overlay, crossX, crossY, xLabel, yLabel } = _chartEls();
+  if (!overlay) return;
+
+  const rect = overlay.getBoundingClientRect();
+  const x = (clientX - rect.left) / rect.width;
+  const y = (clientY - rect.top) / rect.height;
+  const plot = _chartMeta.plot_area;
+  if (x < plot.left || x > plot.right || y < plot.top || y > plot.bottom) {
+    _hideChartCrosshair();
+    return;
+  }
+
+  let active = null;
+  for (const [panelKey, panel] of Object.entries(_chartMeta.panels || {})) {
+    if (x >= panel.left && x <= panel.right && y >= panel.top && y <= panel.bottom) {
+      active = { key: panelKey, ...panel };
+      break;
+    }
+  }
+  if (!active) {
+    _hideChartCrosshair();
+    return;
+  }
+
+  const dataX = active.x_min + (((x - active.left) / Math.max(0.0001, active.width)) * (active.x_max - active.x_min));
+  const idx = _clamp(Math.round(dataX), 0, Math.max(0, (_chartMeta.count || 1) - 1));
+  const date = _chartMeta.dates?.[idx] || "";
+  const relY = 1 - ((y - active.top) / Math.max(0.0001, active.height));
+  const value = active.y_min + relY * (active.y_max - active.y_min);
+
+  crossX.style.left = _pct(x);
+  crossX.style.top = _pct(plot.top);
+  crossX.style.height = _pct(plot.bottom - plot.top);
+  crossX.classList.remove("hidden");
+
+  crossY.style.left = _pct(active.left);
+  crossY.style.top = _pct(y);
+  crossY.style.width = _pct(active.right - active.left);
+  crossY.classList.remove("hidden");
+
+  xLabel.textContent = date;
+  xLabel.style.left = _pct(x);
+  xLabel.style.top = _pct(plot.bottom);
+  xLabel.classList.remove("hidden");
+
+  yLabel.textContent = _chartValueText(active.key, value);
+  yLabel.style.left = _pct(active.right);
+  yLabel.style.top = _pct(y);
+  yLabel.classList.remove("hidden");
 }
 
 function _clearPinnedEvent() {
@@ -122,55 +246,109 @@ function _bindChartOverlay() {
   if (!overlay) return;
 
   overlay.addEventListener("mousemove", e => {
+    if (_chartView.dragging || _chartPinned || _chartView.touchMode === "pan" || _chartView.touchMode === "pinch") return;
+    _updateCrosshairAtClient(e.clientX, e.clientY);
+  });
+
+  overlay.addEventListener("wheel", e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    _zoomAt(e.clientX, e.clientY, factor);
+  }, { passive: false });
+
+  overlay.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+    if (_chartView.scale <= 1.0001) return;
+    if (e.target.closest(".chart-event-badge")) return;
+    _chartView.dragging = true;
+    _chartView.dragX = e.clientX;
+    _chartView.dragY = e.clientY;
+    overlay.classList.add("is-pan");
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", e => {
+    if (!_chartView.dragging) return;
+    const dx = e.clientX - _chartView.dragX;
+    const dy = e.clientY - _chartView.dragY;
+    _chartView.dragX = e.clientX;
+    _chartView.dragY = e.clientY;
+    _chartView.tx += dx;
+    _chartView.ty += dy;
+    _applyChartTransform();
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (!_chartView.dragging) return;
+    _chartView.dragging = false;
+    overlay.classList.remove("is-pan");
+  });
+
+  overlay.addEventListener("touchstart", e => {
     if (!_chartMeta) return;
-    if (_chartPinned) return;
-    const { crossX, crossY, xLabel, yLabel } = _chartEls();
-    const rect = overlay.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    const plot = _chartMeta.plot_area;
-    if (x < plot.left || x > plot.right || y < plot.top || y > plot.bottom) {
-      _hideChartCrosshair();
+    if (e.touches.length === 2) {
+      _chartView.touchMode = "pinch";
+      _chartView.pinchDist = _touchDistance(e.touches[0], e.touches[1]);
+      e.preventDefault();
       return;
     }
-
-    let active = null;
-    for (const [panelKey, panel] of Object.entries(_chartMeta.panels || {})) {
-      if (x >= panel.left && x <= panel.right && y >= panel.top && y <= panel.bottom) {
-        active = { key: panelKey, ...panel };
-        break;
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      _chartView.dragX = t.clientX;
+      _chartView.dragY = t.clientY;
+      _chartView.touchMode = _chartView.scale > 1.0001 ? "pan" : "crosshair";
+      if (_chartView.touchMode === "crosshair") {
+        _updateCrosshairAtClient(t.clientX, t.clientY);
       }
+      e.preventDefault();
     }
-    if (!active) {
-      _hideChartCrosshair();
+  }, { passive: false });
+
+  overlay.addEventListener("touchmove", e => {
+    if (!_chartMeta) return;
+    if (e.touches.length === 2) {
+      const dist = _touchDistance(e.touches[0], e.touches[1]);
+      const mid = _touchMidpoint(e.touches[0], e.touches[1]);
+      if (_chartView.pinchDist > 0) {
+        const factor = dist / _chartView.pinchDist;
+        _zoomAt(mid.x, mid.y, factor);
+      }
+      _chartView.pinchDist = dist;
+      _chartView.touchMode = "pinch";
+      e.preventDefault();
       return;
     }
 
-    const dataX = active.x_min + (((x - active.left) / Math.max(0.0001, active.width)) * (active.x_max - active.x_min));
-    const idx = _clamp(Math.round(dataX), 0, Math.max(0, (_chartMeta.count || 1) - 1));
-    const date = _chartMeta.dates?.[idx] || "";
-    const relY = 1 - ((y - active.top) / Math.max(0.0001, active.height));
-    const value = active.y_min + relY * (active.y_max - active.y_min);
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      if (_chartView.touchMode === "pan" && _chartView.scale > 1.0001) {
+        const dx = t.clientX - _chartView.dragX;
+        const dy = t.clientY - _chartView.dragY;
+        _chartView.dragX = t.clientX;
+        _chartView.dragY = t.clientY;
+        _chartView.tx += dx;
+        _chartView.ty += dy;
+        _applyChartTransform();
+      } else {
+        _chartView.touchMode = "crosshair";
+        _updateCrosshairAtClient(t.clientX, t.clientY);
+      }
+      e.preventDefault();
+    }
+  }, { passive: false });
 
-    crossX.style.left = _pct(x);
-    crossX.style.top = _pct(plot.top);
-    crossX.style.height = _pct(plot.bottom - plot.top);
-    crossX.classList.remove("hidden");
-
-    crossY.style.left = _pct(active.left);
-    crossY.style.top = _pct(y);
-    crossY.style.width = _pct(active.right - active.left);
-    crossY.classList.remove("hidden");
-
-    xLabel.textContent = date;
-    xLabel.style.left = _pct(x);
-    xLabel.style.top = _pct(plot.bottom);
-    xLabel.classList.remove("hidden");
-
-    yLabel.textContent = _chartValueText(active.key, value);
-    yLabel.style.left = _pct(active.right);
-    yLabel.style.top = _pct(y);
-    yLabel.classList.remove("hidden");
+  overlay.addEventListener("touchend", e => {
+    if (e.touches.length === 0) {
+      _chartView.touchMode = null;
+      _chartView.pinchDist = 0;
+      if (!_chartPinned) {
+        _hideChartTooltip();
+      }
+    } else if (e.touches.length === 1 && _chartView.scale > 1.0001) {
+      _chartView.touchMode = "pan";
+      _chartView.dragX = e.touches[0].clientX;
+      _chartView.dragY = e.touches[0].clientY;
+    }
   });
 
   overlay.addEventListener("mouseleave", () => {
@@ -193,192 +371,19 @@ function _bindChartOverlay() {
     _hideChartTooltip();
   });
 
-  // ── 줌 / 드래그 / 터치 인터랙션 ──────────────────────────
-  const stage = document.getElementById("chartStage");
-  if (stage) {
-    // 마우스 휠 줌
-    overlay.addEventListener("wheel", e => {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 1.1 : 0.9;
-      _chartZoom *= delta;
-      _chartZoom = _clamp(_chartZoom, 0.5, 3.0);
-      _applyChartTransform();
-    }, { passive: false });
-
-    // 마우스 드래그
-    overlay.addEventListener("mousedown", e => {
-      _isDragging = true;
-      _dragStartX = e.clientX;
-      _dragStartY = e.clientY;
-      overlay.style.cursor = "grabbing";
-    });
-
-    document.addEventListener("mousemove", e => {
-      if (!_isDragging) return;
-      const dx = e.clientX - _dragStartX;
-      const dy = e.clientY - _dragStartY;
-      _chartOffsetX += dx;
-      _chartOffsetY += dy;
-      _dragStartX = e.clientX;
-      _dragStartY = e.clientY;
-      _applyChartTransform();
-    });
-
-    document.addEventListener("mouseup", () => {
-      _isDragging = false;
-      overlay.style.cursor = "default";
-    });
-
-    overlay.addEventListener("mouseleave", () => {
-      _isDragging = false;
-      overlay.style.cursor = "default";
-    });
-
-    // 모바일 터치 (두 손가락 줌, 한 손가락 드래그)
-    overlay.addEventListener("touchstart", e => {
-      if (e.touches.length === 2) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        _lastTouchDistance = Math.sqrt(dx * dx + dy * dy);
-      } else if (e.touches.length === 1) {
-        _isDragging = true;
-        _dragStartX = e.touches[0].clientX;
-        _dragStartY = e.touches[0].clientY;
-      }
-    }, { passive: true });
-
-    overlay.addEventListener("touchmove", e => {
-      if (e.touches.length === 2) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (_lastTouchDistance > 0) {
-          const delta = distance / _lastTouchDistance;
-          _chartZoom *= delta;
-          _chartZoom = _clamp(_chartZoom, 0.5, 3.0);
-          _applyChartTransform();
-        }
-        _lastTouchDistance = distance;
-      } else if (e.touches.length === 1 && _isDragging) {
-        const dx = e.touches[0].clientX - _dragStartX;
-        const dy = e.touches[0].clientY - _dragStartY;
-        _chartOffsetX += dx;
-        _chartOffsetY += dy;
-        _dragStartX = e.touches[0].clientX;
-        _dragStartY = e.touches[0].clientY;
-        _applyChartTransform();
-      }
-    }, { passive: true });
-
-    overlay.addEventListener("touchend", e => {
-      if (e.touches.length < 2) {
-        _lastTouchDistance = 0;
-      }
-      if (e.touches.length === 0) {
-        _isDragging = false;
-      }
-    }, { passive: true });
-
-    // 모바일 터치로 수직/수평선 표시 (하나의 터치 포인트)
-    overlay.addEventListener("touchmove", e => {
-      if (e.touches.length === 1 && !_isDragging) {
-        const touch = e.touches[0];
-        const rect = overlay.getBoundingClientRect();
-        const x = (touch.clientX - rect.left) / rect.width;
-        const y = (touch.clientY - rect.top) / rect.height;
-        
-        // 기존 mousemove 로직과 동일하게 크로스헤어 표시
-        if (!_chartMeta) return;
-        const { crossX, crossY, xLabel, yLabel } = _chartEls();
-        const plot = _chartMeta.plot_area;
-        if (x < plot.left || x > plot.right || y < plot.top || y > plot.bottom) {
-          _hideChartCrosshair();
-          return;
-        }
-
-        let active = null;
-        for (const [panelKey, panel] of Object.entries(_chartMeta.panels || {})) {
-          if (x >= panel.left && x <= panel.right && y >= panel.top && y <= panel.bottom) {
-            active = { key: panelKey, ...panel };
-            break;
-          }
-        }
-        if (!active) {
-          _hideChartCrosshair();
-          return;
-        }
-
-        const dataX = active.x_min + (((x - active.left) / Math.max(0.0001, active.width)) * (active.x_max - active.x_min));
-        const idx = _clamp(Math.round(dataX), 0, Math.max(0, (_chartMeta.count || 1) - 1));
-        const date = _chartMeta.dates?.[idx] || "";
-        const relY = 1 - ((y - active.top) / Math.max(0.0001, active.height));
-        const value = active.y_min + relY * (active.y_max - active.y_min);
-
-        crossX.style.left = _pct(x);
-        crossX.style.top = _pct(plot.top);
-        crossX.style.height = _pct(plot.bottom - plot.top);
-        crossX.classList.remove("hidden");
-
-        crossY.style.left = _pct(active.left);
-        crossY.style.top = _pct(y);
-        crossY.style.width = _pct(active.right - active.left);
-        crossY.classList.remove("hidden");
-
-        xLabel.textContent = date;
-        xLabel.style.left = _pct(x);
-        xLabel.style.top = _pct(plot.bottom);
-        xLabel.classList.remove("hidden");
-
-        yLabel.textContent = _chartValueText(active.key, value);
-        yLabel.style.left = _pct(active.right);
-        yLabel.style.top = _pct(y);
-        yLabel.classList.remove("hidden");
-      }
-    }, { passive: true });
-  }
-
   _chartOverlayBound = true;
-}
-
-function _applyChartTransform() {
-  const stage = document.getElementById("chartStage");
-  if (!stage) return;
-  stage.style.transform = `translate(${_chartOffsetX}px, ${_chartOffsetY}px) scale(${_chartZoom})`;
 }
 
 function _renderChartOverlay(meta) {
   _chartMeta = meta || null;
   _clearPinnedEvent();
-  const { eventLayer, avglLine, trailingLine } = _chartEls();
+  const { eventLayer } = _chartEls();
   if (!eventLayer) return;
   eventLayer.innerHTML = "";
   _hideChartCrosshair();
   _hideChartTooltip();
+  _resetChartTransform();
   _bindChartOverlay();
-  
-  // ── 평단가/추적손절 선 렌더링 ──────────────────────────────
-  if (avglLine) {
-    if (_chartMeta?.avg_price_y !== undefined) {
-      avglLine.style.top = _pct(_chartMeta.avg_price_y);
-      avglLine.style.width = _pct(1); // 전체 폭
-      avglLine.style.left = "0";
-      avglLine.classList.remove("hidden");
-    } else {
-      avglLine.classList.add("hidden");
-    }
-  }
-  
-  if (trailingLine) {
-    if (_chartMeta?.trailing_stop_y !== undefined) {
-      trailingLine.style.top = _pct(_chartMeta.trailing_stop_y);
-      trailingLine.style.width = _pct(1); // 전체 폭
-      trailingLine.style.left = "0";
-      trailingLine.classList.remove("hidden");
-    } else {
-      trailingLine.classList.add("hidden");
-    }
-  }
-  
   if (!_chartMeta) return;
 
   (_chartMeta.events || []).forEach(ev => {
@@ -884,19 +889,16 @@ async function loadAnalysis(ticker) {
     document.getElementById("mainChart").src = "data:image/png;base64," + d.chart;
     _renderChartOverlay(d.chart_meta);
 
+    // 보유 정보 배지
+    const isHolding = !!(d.holding && d.holding.is_holding);
+    _heldQty = isHolding ? Number(d.holding.quantity || 0) : 0;
+    document.getElementById("holdingBadge").style.display = isHolding ? "inline-block" : "none";
+
     // 지표 칩
     renderChips(j, l);
 
     // 테이블
     buildTable(d.table);
-
-    // 보유 중 배지 (비동기 — 분석 렌더링 차단하지 않음)
-    fetch("/api/portfolio").then(r => r.json()).then(pf => {
-      const pos = pf.ok ? (pf.positions || []).find(p => p.ticker === _currentTicker) : null;
-      const held = !!pos;
-      _heldQty = pos ? Number(pos.quantity || 0) : 0;
-      document.getElementById("holdingBadge").style.display = held ? "inline-block" : "none";
-    }).catch(() => {});
 
     hideLoading();
     document.getElementById("analyzeMain").style.display = "block";

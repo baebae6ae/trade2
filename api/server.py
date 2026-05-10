@@ -171,13 +171,51 @@ def api_analyze(ticker: str):
     timeframe = normalize_timeframe(request.args.get("timeframe", "daily"))
     bars   = int(request.args.get("bars", 220))
     try:
+        ticker = ticker.upper()
         fetch_period = resolve_fetch_period(period, timeframe)
         raw_df    = fetch(ticker, fetch_period)
         price_df  = resample_ohlcv(raw_df, timeframe)
         ind_df    = calc_indicators(price_df, timeframe)
         fis_df    = calc_fis(ind_df)
         judgment  = make_judgment(fis_df)
-        chart_b64, chart_meta = render_main_chart(fis_df, judgment, ticker, bars, timeframe, include_meta=True)
+
+        positions = get_positions()
+        pos = positions.get(ticker)
+        hold_payload = {
+            "is_holding": False,
+            "quantity": 0,
+            "avg_price": None,
+            "trailing_stop": None,
+        }
+        holding_lines = None
+
+        if pos:
+            avg_price = float(pos.get("avg_price") or 0)
+            qty = int(pos.get("quantity") or 0)
+            atr_now = float(fis_df.iloc[-1].get("ATR14") or 0)
+            high20_now = float(fis_df["High"].iloc[-20:].max()) if len(fis_df) >= 20 else float(fis_df["High"].max())
+            today_ts = round(high20_now - atr_now * 2, 4) if atr_now > 0 else None
+            ratchet_ts = update_trailing_stop(ticker, today_ts) if today_ts else pos.get("max_trailing_stop")
+            holding_lines = {
+                "avg_price": avg_price,
+                "trailing_stop": ratchet_ts,
+            }
+            hold_payload = {
+                "is_holding": True,
+                "quantity": qty,
+                "avg_price": avg_price,
+                "trailing_stop": ratchet_ts,
+            }
+
+        chart_b64, chart_meta = render_main_chart(
+            fis_df,
+            judgment,
+            ticker,
+            bars,
+            timeframe,
+            include_meta=True,
+            holding_lines=holding_lines,
+        )
 
         recent = fis_df.iloc[-30:].copy()
         recent.index = recent.index.strftime("%Y-%m-%d")
@@ -219,29 +257,10 @@ def api_analyze(ticker: str):
         day_change_pct = round((c - prev_close) / prev_close * 100, 2) if prev_close > 0 else 0.0
         day_change_abs = round(c - prev_close, 4)
 
-        # ── 평단가/추적손절 선 메타 추가 ────────────────────────
-        positions = get_positions()
-        ticker_pos = positions.get(ticker)
-        if ticker_pos and ticker_pos.get("qty", 0) > 0:
-            price_panel = chart_meta.get("panels", {}).get("price", {})
-            if price_panel:
-                y_min = price_panel.get("y_min", 0)
-                y_max = price_panel.get("y_max", 1)
-                y_height = y_max - y_min if y_max != y_min else 1
-                
-                # 평단가 Y좌표 (0 = top, 1 = bottom)
-                avg_price = ticker_pos.get("avg_price")
-                if avg_price:
-                    chart_meta["avg_price_y"] = 1 - ((avg_price - y_min) / y_height)
-                
-                # 추적손절 Y좌표 (0 = top, 1 = bottom)
-                trailing_stop_val = ticker_pos.get("trailing_stop")
-                if trailing_stop_val:
-                    chart_meta["trailing_stop_y"] = 1 - ((trailing_stop_val - y_min) / y_height)
-
         return jsonify({
             "ok": True, "ticker": ticker, "info": info,
             "judgment": judgment, "chart": chart_b64, "chart_meta": chart_meta, "table": table,
+            "holding": hold_payload,
             "entry_score": round(entry["score"], 1),
             "entry": entry,
             "timeframe": timeframe,
