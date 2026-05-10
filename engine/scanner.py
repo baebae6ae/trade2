@@ -11,7 +11,7 @@ def _analyze_one(ticker_name):
     ticker, name = ticker_name
     try:
         df     = fetch(ticker, "1y")
-        df     = calc_indicators(df)
+        df     = calc_indicators(df, mode="fis")
         df_fis = calc_fis(df)
         j      = make_judgment(df_fis)
         last        = df_fis.iloc[-1]

@@ -153,14 +153,21 @@ def _adx(df: pd.DataFrame, period: int = 14):
     return adx, plus_di, minus_di
 
 
-def calc_indicators(df: pd.DataFrame, timeframe: str = "daily") -> pd.DataFrame:
-    """EMA / ATR / BB / Ichimoku / RVOL / RSI / MACD / ADX 추가"""
+def calc_indicators(df: pd.DataFrame, timeframe: str = "daily", mode: str = "analyze") -> pd.DataFrame:
+    """
+    지표 계산 모드
+    - analyze: 차트 분석 화면용 전체 지표
+    - fis: 판단/스캔용 핵심 지표(연산량 축소)
+    """
     df = df.copy()
     timeframe_key = normalize_timeframe(timeframe)
     range_window = TIMEFRAME_CONFIG[timeframe_key]["range_window"]
+    mode_key = (mode or "analyze").strip().lower()
+    is_analyze = mode_key == "analyze"
 
     # EMA
-    for span in [5, 10, 20, 60, 120]:
+    ema_spans = [5, 10, 20, 60, 120] if is_analyze else [10, 20, 60, 120]
+    for span in ema_spans:
         df[f"EMA{span}"] = _ema(df["Close"], span)
 
     # ATR
@@ -184,28 +191,35 @@ def calc_indicators(df: pd.DataFrame, timeframe: str = "daily") -> pd.DataFrame:
     hi9  = df["High"].rolling(9).max();  lo9  = df["Low"].rolling(9).min()
     hi26 = df["High"].rolling(26).max(); lo26 = df["Low"].rolling(26).min()
     hi52 = df["High"].rolling(52).max(); lo52 = df["Low"].rolling(52).min()
-    df["ICH_TENKAN"]  = (hi9  + lo9)  / 2
-    df["ICH_KIJUN"]   = (hi26 + lo26) / 2
-    df["ICH_SENKOU_A"] = ((df["ICH_TENKAN"] + df["ICH_KIJUN"]) / 2).shift(26)
+    tenkan = (hi9 + lo9) / 2
+    kijun = (hi26 + lo26) / 2
+    if is_analyze:
+        df["ICH_TENKAN"] = tenkan
+    df["ICH_KIJUN"] = kijun
+    df["ICH_SENKOU_A"] = ((tenkan + kijun) / 2).shift(26)
     df["ICH_SENKOU_B"] = ((hi52 + lo52) / 2).shift(26)
-    df["ICH_CHIKOU"]   = df["Close"].shift(-26)
+    if is_analyze:
+        df["ICH_CHIKOU"] = df["Close"].shift(-26)
 
     # Volume
     df["Vol20"] = df["Volume"].rolling(20).mean()
-    df["Vol60"] = df["Volume"].rolling(60).mean()
+    if is_analyze:
+        df["Vol60"] = df["Volume"].rolling(60).mean()
     df["RVOL"]  = df["Volume"] / df["Vol20"].replace(0, np.nan)
 
     # 장기 위치 범위
     df["RangeHigh"] = df["High"].rolling(range_window, min_periods=max(5, range_window // 4)).max()
     df["RangeLow"]  = df["Low"].rolling(range_window, min_periods=max(5, range_window // 4)).min()
-    df["High52"] = df["RangeHigh"]
-    df["Low52"]  = df["RangeLow"]
+    if is_analyze:
+        df["High52"] = df["RangeHigh"]
+        df["Low52"]  = df["RangeLow"]
 
     # RSI14
     df["RSI14"] = _rsi(df["Close"], 14)
 
     # 가격 변화율
-    df["ROC5"]  = df["Close"].pct_change(5) * 100
+    if is_analyze:
+        df["ROC5"] = df["Close"].pct_change(5) * 100
     df["ROC20"] = df["Close"].pct_change(20) * 100
 
     # MACD (12/26/9)
@@ -219,8 +233,9 @@ def calc_indicators(df: pd.DataFrame, timeframe: str = "daily") -> pd.DataFrame:
     spread = (df["High"] - df["Low"]).replace(0, np.nan)
     df["ClosePos"] = ((df["Close"] - df["Low"]) / spread).clip(0, 1)
     df["UpperWickRatio"] = (df["High"] - df[["Open", "Close"]].max(axis=1)) / spread
-    df["LowerWickRatio"] = (df[["Open", "Close"]].min(axis=1) - df["Low"]) / spread
-    df["BodyPct"] = (df["Close"] - df["Open"]).abs() / spread
+    if is_analyze:
+        df["LowerWickRatio"] = (df[["Open", "Close"]].min(axis=1) - df["Low"]) / spread
+        df["BodyPct"] = (df["Close"] - df["Open"]).abs() / spread
 
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     return df.dropna(subset=["Open", "High", "Low", "Close"])

@@ -200,7 +200,7 @@ async function loadPortfolio() {
   const wrap = document.getElementById("portfolioWrap");
   if (!wrap) return;
   try {
-    const data = await fetch("/api/portfolio").then(r => r.json());
+    const data = await fetch("/api/portfolio?lite=1").then(r => r.json());
     if (!data.ok) { renderEmptyPortfolio(wrap); return; }
     const { positions, summary } = data;
     if (!positions.length) { renderEmptyPortfolio(wrap); return; }

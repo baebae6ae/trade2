@@ -31,7 +31,7 @@ def _signal_snapshot(ticker: str, period: str = "1y", timeframe: str = "daily") 
     fetch_period = resolve_fetch_period(period, timeframe)
     raw_df = fetch(ticker, fetch_period)
     price_df = resample_ohlcv(raw_df, timeframe)
-    ind_df = calc_indicators(price_df, timeframe)
+    ind_df = calc_indicators(price_df, timeframe, mode="fis")
     fis_df = calc_fis(ind_df)
     judgment = make_judgment(fis_df)
     entry = calc_entry_score(fis_df)
@@ -175,7 +175,7 @@ def api_analyze(ticker: str):
         fetch_period = resolve_fetch_period(period, timeframe)
         raw_df    = fetch(ticker, fetch_period)
         price_df  = resample_ohlcv(raw_df, timeframe)
-        ind_df    = calc_indicators(price_df, timeframe)
+        ind_df    = calc_indicators(price_df, timeframe, mode="analyze")
         fis_df    = calc_fis(ind_df)
         judgment  = make_judgment(fis_df)
 
@@ -296,7 +296,7 @@ def api_analyze(ticker: str):
 def api_minichart(ticker: str):
     try:
         raw_df = fetch(ticker, "6mo")
-        ind_df = calc_indicators(raw_df)
+        ind_df = calc_indicators(raw_df, mode="fis")
         fis_df = calc_fis(ind_df)
         fis    = float(fis_df.iloc[-1]["FIS"])
         b64    = render_mini_chart(ind_df, ticker, fis)
@@ -340,6 +340,7 @@ def api_scan_kumo(market: str):
 @app.route("/api/portfolio")
 def api_portfolio():
     try:
+        lite = request.args.get("lite", "0").strip().lower() in ("1", "true", "yes", "y")
         positions = get_positions()
         enriched  = []
         for ticker, pos in positions.items():
@@ -349,6 +350,28 @@ def api_portfolio():
                 chg   = idx.get("change_pct") or 0
             except Exception:
                 cur, chg = pos["avg_price"], 0
+            qty    = pos["quantity"]
+            avg    = pos["avg_price"]
+            value  = round(cur * qty, 2)
+            cost   = round(avg * qty, 2)
+            profit = round(value - cost, 2)
+            pct    = round((profit / cost * 100) if cost > 0 else 0, 2)
+
+            if lite:
+                enriched.append({
+                    "ticker":        ticker,
+                    "name":          pos["name"],
+                    "quantity":      qty,
+                    "avg_price":     avg,
+                    "current_price": cur,
+                    "day_change_pct": chg,
+                    "value":         value,
+                    "cost":          cost,
+                    "profit":        profit,
+                    "profit_pct":    pct,
+                })
+                continue
+
             try:
                 signal = _signal_snapshot(ticker)
             except Exception:
@@ -361,12 +384,6 @@ def api_portfolio():
                     "summary_l1": "현재 차트 분석 데이터를 불러오지 못했습니다.",
                     "setup_name": "정보 부족",
                 }
-            qty    = pos["quantity"]
-            avg    = pos["avg_price"]
-            value  = round(cur * qty, 2)
-            cost   = round(avg * qty, 2)
-            profit = round(value - cost, 2)
-            pct    = round((profit / cost * 100) if cost > 0 else 0, 2)
 
             # ── 래칫 트레일링 손절 ────────────────────────────
             today_ts  = signal.get("trailing_stop")  # high20 - ATR*2
@@ -419,7 +436,7 @@ def api_portfolio():
                 "total_profit": total_profit,
                 "total_pct":    total_pct,
             },
-            "analysis": _portfolio_analysis(enriched),
+            "analysis": None if lite else _portfolio_analysis(enriched),
         })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
