@@ -75,25 +75,27 @@ def _cache_path() -> str:
     return os.path.join(os.path.dirname(__file__), "_krx_universe_cache.json")
 
 
-def _load_krx_from_cache() -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
+def _load_krx_from_cache():
     path = _cache_path()
     if not os.path.exists(path):
-        return [], []
+        return [], [], [], []
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, 'r', encoding='utf-8') as f:
             payload = json.load(f)
-        kospi = [(s, n) for s, n in payload.get("kospi", []) if s and n]
-        kosdaq = [(s, n) for s, n in payload.get("kosdaq", []) if s and n]
-        return kospi, kosdaq
+        kospi = [(s, n) for s, n in payload.get('kospi', []) if s and n]
+        kosdaq = [(s, n) for s, n in payload.get('kosdaq', []) if s and n]
+        kospi_r = [(s, n) for s, n in payload.get('kospi_ranked', [])] or kospi
+        kosdaq_r = [(s, n) for s, n in payload.get('kosdaq_ranked', [])] or kosdaq
+        return kospi, kosdaq, kospi_r, kosdaq_r
     except Exception:
-        return [], []
+        return [], [], [], []
 
 
-def _save_krx_cache(kospi: List[Tuple[str, str]], kosdaq: List[Tuple[str, str]]) -> None:
+def _save_krx_cache(kospi, kosdaq, kospi_ranked, kosdaq_ranked):
     path = _cache_path()
-    payload = {"kospi": kospi, "kosdaq": kosdaq}
+    payload = {'kospi': kospi, 'kosdaq': kosdaq, 'kospi_ranked': kospi_ranked, 'kosdaq_ranked': kosdaq_ranked}
     try:
-        with open(path, "w", encoding="utf-8") as f:
+        with open(path, 'w', encoding='utf-8') as f:
             json.dump(payload, f, ensure_ascii=False)
     except Exception:
         pass
@@ -184,12 +186,12 @@ def _load_krx_universe() -> Tuple[
 ]:
     try:
         kospi, kosdaq, kospi_ranked, kosdaq_ranked = _build_krx_universe_from_fdr()
-        _save_krx_cache(kospi, kosdaq)
+        _save_krx_cache(kospi, kosdaq, kospi_ranked, kosdaq_ranked)
         return kospi, kosdaq, kospi_ranked, kosdaq_ranked, "fdr"
     except Exception:
-        cached_kospi, cached_kosdaq = _load_krx_from_cache()
+        cached_kospi, cached_kosdaq, cached_kospi_r, cached_kosdaq_r = _load_krx_from_cache()
         if cached_kospi or cached_kosdaq:
-            return cached_kospi, cached_kosdaq, cached_kospi, cached_kosdaq, "cache"
+            return cached_kospi, cached_kosdaq, cached_kospi_r, cached_kosdaq_r, "cache"
         fb_kospi = sorted(FALLBACK_KOSPI.items(), key=lambda x: x[0])
         fb_kosdaq = sorted(FALLBACK_KOSDAQ.items(), key=lambda x: x[0])
         return (

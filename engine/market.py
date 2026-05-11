@@ -196,8 +196,9 @@ def get_52week_highs(market_key: str, offset: int = 0, limit: int = 10) -> tuple
     cursor = max(0, int(offset or 0))
     results = []
 
+    BATCH = min(max(size * 5, 50), 100)
     while len(results) < size:
-        stocks = get_market_stocks(market_key, offset=cursor, limit=size)
+        stocks = get_market_stocks(market_key, offset=cursor, limit=BATCH)
         if not stocks:
             break
 

@@ -77,8 +77,9 @@ def scan_market(market: str, offset: int = 0, limit: int = 10) -> tuple[list, in
     cursor = max(0, int(offset or 0))
     candidates = []
 
+    BATCH = min(max(size * 5, 50), 100)
     while len(candidates) < size:
-        batch = get_market_stocks(market, offset=cursor, limit=size)
+        batch = get_market_stocks(market, offset=cursor, limit=BATCH)
         if not batch:
             break
 
@@ -216,9 +217,11 @@ def scan_kumo_breakout(market: str, offset: int = 0, limit: int = 10) -> tuple[l
     size = max(1, int(limit or 10))
     cursor = max(0, int(offset or 0))
     collected = []
+    BATCH = min(max(size * 5, 50), 100)
+
 
     while len(collected) < size:
-        batch = get_market_stocks(market, offset=cursor, limit=size)
+        batch = get_market_stocks(market, offset=cursor, limit=BATCH)
         if not batch:
             break
 

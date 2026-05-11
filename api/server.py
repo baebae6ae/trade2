@@ -2,7 +2,7 @@
 
 import os
 import traceback
-from flask import Flask, request, jsonify, send_from_directory, make_response
+from flask import Flask, request, jsonify, send_from_directory
 
 from engine.data      import (
     fetch,
@@ -26,13 +26,6 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 TMPL_DIR   = os.path.join(BASE_DIR, "templates")
 
 app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TMPL_DIR)
-
-
-def _no_cache_response(resp):
-    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    resp.headers["Pragma"] = "no-cache"
-    resp.headers["Expires"] = "0"
-    return resp
 
 
 def _signal_snapshot(ticker: str, period: str = "1y", timeframe: str = "daily") -> dict:
@@ -113,27 +106,23 @@ def _portfolio_analysis(enriched: list) -> dict | None:
 
 @app.route("/")
 def index():
-    return _no_cache_response(make_response(send_from_directory(TMPL_DIR, "index.html")))
+    return send_from_directory(TMPL_DIR, "index.html")
 
 @app.route("/analyze")
 def analyze_page():
-    return _no_cache_response(make_response(send_from_directory(TMPL_DIR, "analyze.html")))
+    return send_from_directory(TMPL_DIR, "analyze.html")
 
 @app.route("/scan")
 def scan_page():
-    return _no_cache_response(make_response(send_from_directory(TMPL_DIR, "scan.html")))
+    return send_from_directory(TMPL_DIR, "scan.html")
 
 @app.route("/mypage")
 def mypage():
-    return _no_cache_response(make_response(send_from_directory(TMPL_DIR, "mypage.html")))
+    return send_from_directory(TMPL_DIR, "mypage.html")
 
 @app.route("/static/<path:path>")
 def static_files(path):
-    resp = make_response(send_from_directory(STATIC_DIR, path))
-    lowered = (path or "").lower()
-    if lowered.endswith((".js", ".css", ".html")):
-        return _no_cache_response(resp)
-    return resp
+    return send_from_directory(STATIC_DIR, path)
 
 
 # ── API: 시장 ─────────────────────────────────────────────
