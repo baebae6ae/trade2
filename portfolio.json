@@ -95,7 +95,7 @@
       "name": "Sempio Company",
       "quantity": 6,
       "avg_price": 59000.0,
-      "max_trailing_stop": 53164.2857,
+      "max_trailing_stop": 53264.2857,
       "buys": [
         {
           "date": "2026-05-09 17:49",
