@@ -2,13 +2,14 @@
   - type: web
     name: cfie-v37
     runtime: python
+    pythonVersion: "3.11.0"
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: GITHUB_TOKEN
-        sync: false   # Render 대시보드에서 직접 입력 (GitHub PAT)
+        sync: false
       - key: GITHUB_REPO
         value: baebae6ae/trade2
     plan: free
